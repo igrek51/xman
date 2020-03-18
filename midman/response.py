@@ -1,6 +1,7 @@
 from typing import Dict
 
 from dataclasses import dataclass
+from nuclear.sublog import log
 
 
 @dataclass
@@ -9,9 +10,8 @@ class HttpResponse(object):
     headers: Dict[str, str]
     content: bytes
 
-    def show(self, prefix: str) -> 'HttpResponse':
-        print(prefix, self.status_code, self.headers)
-        print(prefix, self.content.decode('utf-8'))
+    def log(self, prefix: str) -> 'HttpResponse':
+        log.debug(f'{prefix}', status=self.status_code, headers=self.headers, content=self.content.decode('utf-8'))
         return self
 
     @staticmethod
