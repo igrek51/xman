@@ -6,7 +6,7 @@ from nuclear.sublog import logerr, wrap_context, log
 from midman.cache import RequestCache
 from midman.config import Config
 from midman.handler import RequestHandler
-from midman.transformer import load_transformers
+from midman.extension import load_extensions
 
 
 def setup_proxy(listen_port: int, listen_ssl: int, dst_url: str, record: bool, record_file: str, replay: int,
@@ -23,8 +23,10 @@ def setup_proxy(listen_port: int, listen_ssl: int, dst_url: str, record: bool, r
             Config.replay_clear_cache_seconds = replay_clear_cache_seconds
             Config.allow_chunking = allow_chunking
 
-            RequestHandler.request_cache = RequestCache()
-            RequestHandler.transformers = load_transformers(ext)
+            extensions = load_extensions(ext)
+            RequestHandler.extensions = extensions
+            RequestHandler.request_cache = RequestCache(extensions)
+
             TCPServer.allow_reuse_address = True
             httpd = TCPServer(("", listen_port), RequestHandler)
             if listen_ssl:

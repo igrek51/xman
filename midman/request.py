@@ -15,21 +15,12 @@ class HttpRequest(object):
     client_port: int
     timestamp: float
 
-    def traits(self) -> Tuple:
-        return self.method, self.path, self.content, str(self.headers)
-
-    def __hash__(self):
-        return hash(self.traits())
-
-    def __eq__(self, other):
-        return self.traits() == other.traits()
-
     @staticmethod
     def from_json(data: dict) -> 'HttpRequest':
         data['content'] = data.get('content').encode('utf-8')
         return HttpRequest(**data)
 
-    def log_incoming(self):
+    def log(self):
         if self.content:
             log.info(f'< Incoming: {self.requestline}', headers=self.headers, content='\n'+self.content.decode('utf-8'))
         else:

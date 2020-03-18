@@ -7,13 +7,14 @@ from nuclear.sublog import log, log_error, wrap_context
 
 from midman.cache import RequestCache, now_seconds
 from midman.config import Config
+from midman.extension import Extensions
 from midman.forward import send_to
 from midman.request import HttpRequest
 from midman.response import HttpResponse
 
 
 class RequestHandler(SimpleHTTPRequestHandler):
-    transformers: List[Callable[[HttpRequest], HttpRequest]]
+    extensions: Extensions
     request_cache: RequestCache
 
     def handle_request(self):
@@ -21,58 +22,60 @@ class RequestHandler(SimpleHTTPRequestHandler):
             with wrap_context('handling request'):
                 self.connection.settimeout(10)
                 incoming_request = self.incoming_request()
-                incoming_request.log_incoming()
+                incoming_request.log()
                 response = self.generate_response(incoming_request)
                 self.respond_to_client(response)
 
     def incoming_request(self) -> HttpRequest:
-        headers_dict = {parsed_line[0]: parsed_line[1] for parsed_line in self.headers.items()}
-        method = self.command.lower()
-        content_len = int(headers_dict.get('Content-Length', 0))
-        content: bytes = self.rfile.read(content_len) if content_len else b''
-        return HttpRequest(requestline=self.requestline, method=method, path=self.path,
-                           headers=headers_dict,
-                           content=content, client_addr=self.client_address[0],
-                           client_port=self.client_address[1],
-                           timestamp=now_seconds())
+        with wrap_context('building incoming request'):
+            headers_dict = {parsed_line[0]: parsed_line[1] for parsed_line in self.headers.items()}
+            method = self.command.lower()
+            content_len = int(headers_dict.get('Content-Length', 0))
+            content: bytes = self.rfile.read(content_len) if content_len else b''
+            return HttpRequest(requestline=self.requestline, method=method, path=self.path,
+                               headers=headers_dict,
+                               content=content, client_addr=self.client_address[0],
+                               client_port=self.client_address[1],
+                               timestamp=now_seconds())
 
     def generate_response(self, incoming_request: HttpRequest) -> HttpResponse:
-        for transformer in self.transformers:
-            incoming_request = transformer(incoming_request)
+        with wrap_context('generating response'):
+            for transformer in self.extensions.transformers:
+                incoming_request = transformer(incoming_request)
 
-        request_hash = hash(incoming_request)
+            if Config.replay_clear_cache:
+                self.request_cache.clear_old_cache()
 
-        if Config.replay_clear_cache:
-            self.request_cache.clear_old_cache()
+            if self.request_cache.exists(incoming_request) and Config.replay:
+                return self.request_cache.replay_response(incoming_request).log('> returning')
 
-        if self.request_cache.exists(request_hash) and Config.replay:
-            return self.request_cache.replay_response(request_hash).log('> returning')
+            response: HttpResponse = send_to(incoming_request, base_url=f'{Config.dst_url}').log('<< received')
+            log.debug('> forwarding response back to client',
+                      addr=incoming_request.client_addr, port=incoming_request.client_port)
 
-        response: HttpResponse = send_to(incoming_request, base_url=f'{Config.dst_url}').log('<< received')
-        log.debug('> forwarding response back to client',
-                  addr=incoming_request.client_addr, port=incoming_request.client_port)
+            if Config.record or Config.replay:
+                self.request_cache.save_response(incoming_request, response)
 
-        if Config.record or Config.replay:
-            self.request_cache.save_response(incoming_request, request_hash, response)
-
-        return response
+            return response
 
     def respond_to_client(self, response: HttpResponse):
-        self.send_response_only(response.status_code)
+        with wrap_context('responding back to client'):
+            self.send_response_only(response.status_code)
 
-        if 'Content-Encoding' in response.headers:
-            del response.headers['Content-Encoding']
-            log.debug('removing Content-Encoding header')
+            if 'Content-Encoding' in response.headers:
+                del response.headers['Content-Encoding']
+                log.debug('removing Content-Encoding header')
 
-        for name, value in response.headers.items():
-            self.send_header(name, value)
-        self.end_headers()
+            for name, value in response.headers.items():
+                self.send_header(name, value)
+            self.end_headers()
 
-        if Config.allow_chunking and response.headers.get('Transfer-Encoding') == 'chunked':
-            self.send_chunked_response(chunks(response.content, 512))
-        else:
-            self.wfile.write(response.content)
-        self.close_connection = True
+            if Config.allow_chunking and response.headers.get('Transfer-Encoding') == 'chunked':
+                self.send_chunked_response(chunks(response.content, 512))
+            else:
+                self.wfile.write(response.content)
+            self.close_connection = True
+            log.debug('response sent')
 
     def send_chunked_response(self, content_chunks: Iterable[bytes]):
         for chunk in content_chunks:
