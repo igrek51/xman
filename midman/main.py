@@ -17,4 +17,5 @@ def main():
         parameter('replay_clear_cache', help='enable clearing cache periodically', type=int, default=1),
         parameter('replay_clear_cache_seconds', help='clearing cache interval in seconds', type=int, default=1 * 60),
         parameter('allow_chunking', help='enable sending response in chunks', type=int, default=1),
+        parameter('ext', help='load extensions from Python file'),
     ).run()
