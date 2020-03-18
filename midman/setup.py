@@ -1,7 +1,7 @@
 import ssl
 from socketserver import TCPServer
 
-from nuclear.sublog import log_error, wrap_context, log
+from nuclear.sublog import logerr, wrap_context, log
 
 from midman.cache import RequestCache
 from midman.config import Config
@@ -12,7 +12,7 @@ from midman.transformer import load_transformers
 def setup_proxy(listen_port: int, listen_ssl: int, dst_url: str, record: bool, record_file: str, replay: int,
                 replay_throttle: int, replay_clear_cache: int, replay_clear_cache_seconds: int, allow_chunking: int,
                 ext: str):
-    with log_error():
+    with logerr():
         with wrap_context('initialization'):
             Config.dst_url = dst_url
             Config.record = record

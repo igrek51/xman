@@ -18,10 +18,11 @@ def load_transformers(extension_path: str) -> List[Callable[[HttpRequest], HttpR
     if not extension_path:
         return []
 
+    log.debug(f'loading extensions', path=extension_path)
+
     ext_module = SourceFileLoader("midman.transformer", extension_path).load_module()
     transformers = ext_module.transformers
 
-    names = [t.__name__ for t in transformers]
-
-    log.debug(f'loaded {len(transformers)} transformers', transformers=names)
+    names = ','.join([t.__name__ for t in transformers])
+    log.debug(f'loaded transformers', count=len(transformers), names=names)
     return transformers

@@ -31,6 +31,6 @@ class HttpRequest(object):
 
     def log_incoming(self):
         if self.content:
-            log.info(f'< Incoming: {self.requestline}', headers=self.headers, content=self.content.decode('utf-8'))
+            log.info(f'< Incoming: {self.requestline}', headers=self.headers, content='\n'+self.content.decode('utf-8'))
         else:
             log.info(f'< Incoming: {self.requestline}', headers=self.headers)

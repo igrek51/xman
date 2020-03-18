@@ -11,7 +11,7 @@ class HttpResponse(object):
     content: bytes
 
     def log(self, prefix: str) -> 'HttpResponse':
-        log.debug(f'{prefix}', status=self.status_code, headers=self.headers, content=self.content.decode('utf-8'))
+        log.debug(f'{prefix}', status=self.status_code, headers=self.headers, content='\n'+self.content.decode('utf-8'))
         return self
 
     @staticmethod
