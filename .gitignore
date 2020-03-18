@@ -1,1 +1,15 @@
+*.pyc
+.cache
+.coverage
+.pytest_cache
+.mypy_cache/
+__pycache__
+*.egg-info
+build/
+dist/
+
+.idea
+*.iml
+venv/
+
 tape.json

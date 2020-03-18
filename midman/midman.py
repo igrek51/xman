@@ -1,31 +1,19 @@
-#!/usr/bin/env python3
 import json
 import os
+import re
 import ssl
+import sys
 from datetime import datetime
 from http.server import SimpleHTTPRequestHandler
 from socketserver import TCPServer
 from typing import Dict, Iterable, Sequence, Tuple, Callable
-import re
 
 import requests
-import sys
 import urllib3
 from dataclasses import dataclass, is_dataclass, asdict
-from nuclear import CliBuilder, argument, parameter, flag
 from nuclear.sublog import log, log_error, wrap_context
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-
-def main():
-    CliBuilder('middleman', run=setup_proxy, help_on_empty=True).has(
-        parameter('listen_port', help='listen port for incoming requests', type=int, default=8080),
-        flag('listen_ssl', help='enable https on listening side'),
-        argument('dst_url', help='destination base url', required=False, default='http://127.0.0.1:8000'),
-        flag('record', help='enable recording requests & responses'),
-        parameter('record_file', help='filename with recorded requests', default='tape.json'),
-    ).run()
 
 record = False
 record_file = 'tape.json'
@@ -64,7 +52,7 @@ class HttpRequest(object):
 
     def __eq__(self, other):
         return self.traits() == other.traits()
-    
+
     @staticmethod
     def from_json(data: dict) -> 'HttpRequest':
         data['content'] = data.get('content').encode('utf-8')
@@ -92,14 +80,13 @@ class HttpResponse(object):
 class CacheEntry(object):
     request: HttpRequest
     response: HttpResponse
-    
+
     @staticmethod
     def from_json(data: dict) -> 'CacheEntry':
         return CacheEntry(
             request=HttpRequest.from_json(data.get('request')),
             response=HttpResponse.from_json(data.get('response')),
         )
-
 
 
 def transformer_cutpath(request: HttpRequest) -> HttpRequest:
@@ -310,7 +297,3 @@ def chunks(lst: Sequence, n: int) -> Iterable:
 
 def now_seconds() -> float:
     return datetime.now().timestamp()
-
-
-if __name__ == '__main__':
-    main()
