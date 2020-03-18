@@ -7,8 +7,8 @@ from midman.request import HttpRequest
 
 
 def _transformer_shorten_path(request: HttpRequest) -> HttpRequest:
-    if request.path.startswith('/proxy/'):
-        match = re.search(r'^/proxy/(.+?)(/[a-z]+)(/.*)', request.path)
+    if request.path.startswith('/path/'):
+        match = re.search(r'^/path/(.+?)(/[a-z]+)(/.*)', request.path)
         if match:
             request.path = match.group(3)
             log.debug('request path transformed', path=request.path)
