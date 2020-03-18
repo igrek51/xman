@@ -5,25 +5,32 @@ import ssl
 from datetime import datetime
 from http.server import SimpleHTTPRequestHandler
 from socketserver import TCPServer
-from typing import Dict, Iterable, Sequence, Tuple
+from typing import Dict, Iterable, Sequence, Tuple, Callable
+import re
 
 import requests
 import sys
 import urllib3
 from dataclasses import dataclass, is_dataclass, asdict
+from nuclear import CliBuilder, argument, parameter, flag
+from nuclear.sublog import log, log_error, wrap_context
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-listen_port = 8001
-listen_ssl_enabled = False
-dst_scheme = 'http'
-dst_addr = '127.0.0.1'
-dst_port = 8000
+
+def main():
+    CliBuilder('middleman', run=setup_proxy, help_on_empty=True).has(
+        parameter('listen_port', help='listen port for incoming requests', type=int, default=8080),
+        flag('listen_ssl', help='enable https on listening side'),
+        argument('dst_url', help='destination base url', required=False, default='http://127.0.0.1:8000'),
+        flag('record', help='enable recording requests & responses'),
+        parameter('record_file', help='filename with recorded requests', default='tape.json'),
+    ).run()
 
 record = False
 record_file = 'tape.json'
 
-replay = True
+replay = False
 replay_throttle = True
 replay_clear_cache = True
 replay_clear_cache_seconds = 1 * 60
@@ -94,6 +101,38 @@ class CacheEntry(object):
         )
 
 
+
+def transformer_cutpath(request: HttpRequest) -> HttpRequest:
+    if request.path.startswith('/proxy/'):
+        match = re.search(r'^/proxy/(.+?)(/[a-z]+)(/.*)', request.path)
+        if match:
+            request.path = match.group(3)
+    return request
+
+
+transformers = [
+    transformer_cutpath
+]
+
+
+def setup_proxy(listen_port: int, listen_ssl: bool, dst_url: str, record: bool, record_file: str):
+    with log_error():
+        TCPServer.allow_reuse_address = True
+        RequestHandler.dst_url = dst_url
+        RequestHandler.transformers = transformers
+
+        httpd = TCPServer(("", listen_port), RequestHandler)
+        if listen_ssl:
+            httpd.socket = ssl.wrap_socket(httpd.socket, certfile='./dev-cert.pem', server_side=True)
+        scheme = 'HTTPS' if listen_ssl else 'HTTP'
+        print(f'Listening on {scheme} port {listen_port}...')
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            pass
+        httpd.server_close()
+
+
 class EnhancedJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if is_dataclass(obj):
@@ -142,14 +181,24 @@ too_many_requests_response = HttpResponse(status_code=429, headers={}, content=b
 
 
 class RequestHandler(SimpleHTTPRequestHandler):
+    dst_url: str
+    transformers: Callable[[HttpRequest], HttpRequest]
+
     def handle_request(self):
-        self.connection.settimeout(10)
-        incoming_request = self.incoming_request()
-        incoming_request.show('<')
-        response = self.generate_response(incoming_request)
-        self.respond_to_client(response)
+        with log_error():
+            with wrap_context('handling request'):
+                self.connection.settimeout(10)
+                incoming_request = self.incoming_request()
+                incoming_request.show('<')
+                response = self.generate_response(incoming_request)
+                self.respond_to_client(response)
 
     def generate_response(self, incoming_request: HttpRequest) -> HttpResponse:
+        log.debug('transformers', transformers=self.transformers)
+        for transformer in self.transformers:
+            incoming_request = transformer(incoming_request)
+            log.debug('request transformed', path=incoming_request.path)
+
         request_hash = hash(incoming_request)
 
         if replay_clear_cache:
@@ -163,7 +212,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
             cached = request_cache[request_hash]
             return cached.response.show('>')
 
-        response: HttpResponse = send_to(incoming_request, base_url=f'{dst_scheme}://{dst_addr}:{dst_port}').show('<<')
+        response: HttpResponse = send_to(incoming_request, base_url=f'{self.dst_url}').show('<<')
         print(f'> forwarding response back to client {incoming_request.client_addr}:{incoming_request.client_port}')
 
         if record or replay:
@@ -264,14 +313,4 @@ def now_seconds() -> float:
 
 
 if __name__ == '__main__':
-    TCPServer.allow_reuse_address = True
-    httpd = TCPServer(("", listen_port), RequestHandler)
-    if listen_ssl_enabled:
-        httpd.socket = ssl.wrap_socket(httpd.socket, certfile='./dev-cert.pem', server_side=True)
-    scheme = 'HTTPS' if listen_ssl_enabled else 'HTTP'
-    print(f'Listening on {scheme} port {listen_port}...')
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    httpd.server_close()
+    main()
