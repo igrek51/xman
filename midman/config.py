@@ -1,0 +1,9 @@
+class Config(object):
+    dst_url: str
+    record: bool
+    record_file: str
+    replay: int
+    replay_throttle: int
+    replay_clear_cache: int
+    replay_clear_cache_seconds: int
+    allow_chunking: int
