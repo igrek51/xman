@@ -11,7 +11,9 @@ def _request_shorten_path(request: HttpRequest) -> HttpRequest:
     return replace_request_path(request, r'^/path/(.+?)(/[a-z]+)(/.*)', r'\3')
 
 
-def _response_same(request: HttpRequest, response: HttpResponse) -> HttpResponse:
+def _transform_response(request: HttpRequest, response: HttpResponse) -> HttpResponse:
+    if request.path.startswith('/api'):
+        response = response.set_content('{"payload": "error"}"')
     return response
 
 
@@ -30,7 +32,7 @@ request_transformers: List[Callable[[HttpRequest], HttpRequest]] = [
 
 """Mappers applied on every response after all"""
 response_transformers: List[Callable[[HttpRequest, HttpResponse], HttpResponse]] = [
-    _response_same,
+    _transform_response,
 ]
 
 """Gets tuple denoting request uniqueness. Requests with same results are treated as the same when caching."""

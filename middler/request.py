@@ -29,7 +29,16 @@ class HttpRequest(object):
             log.info(f'< Incoming: {self.requestline}', headers=self.headers)
 
     def transform(self, transformers: List[Callable[['HttpRequest'], 'HttpRequest']]) -> 'HttpRequest':
-        transformed = self
+        transformed = HttpRequest(
+            requestline=self.requestline,
+            method=self.method,
+            path=self.path,
+            headers=self.headers,
+            content=self.content,
+            client_addr=self.client_addr,
+            client_port=self.client_port,
+            timestamp=self.timestamp,
+        )
         for transformer in transformers:
             transformed = transformer(transformed)
         return transformed

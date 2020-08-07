@@ -1,9 +1,9 @@
+import json
+from http.client import responses
 from typing import Dict, List, Callable
 
 from dataclasses import dataclass
 from nuclear.sublog import log
-
-from http.client import responses
 
 from middler.request import HttpRequest
 
@@ -29,7 +29,22 @@ class HttpResponse(object):
 
     def transform(self, transformers: List[Callable[[HttpRequest, 'HttpResponse'], 'HttpResponse']],
                   request: HttpRequest) -> 'HttpResponse':
-        transformed = self
+        transformed = HttpResponse(
+            status_code=self.status_code,
+            headers=self.headers,
+            content=self.content,
+        )
         for transformer in transformers:
             transformed = transformer(request, transformed)
         return transformed
+
+    def set_content(self, content: str) -> 'HttpResponse':
+        self.content = content.encode()
+        self.headers['Content-Length'] = str(len(self.content))
+        return self
+
+    def set_json(self, obj: object) -> 'HttpResponse':
+        self.content = json.dumps(obj).encode()
+        self.headers['Content-Length'] = str(len(self.content))
+        self.headers['Content-Type'] = 'application/json'
+        return self

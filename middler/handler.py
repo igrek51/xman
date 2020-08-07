@@ -24,8 +24,10 @@ class RequestHandler(SimpleHTTPRequestHandler):
                 self.connection.settimeout(10)
                 incoming_request = self.incoming_request()
                 incoming_request.log(self.config.verbose)
-                response = self.generate_response(incoming_request)
-                response = response.transform(self.extensions.response_transformers, incoming_request)
+                response_0 = self.generate_response(incoming_request)
+                response = response_0.transform(self.extensions.response_transformers, incoming_request)
+                if response != response_0:
+                    response.log('response transformed', self.config.verbose)
                 self.respond_to_client(response)
 
     def incoming_request(self) -> HttpRequest:
@@ -39,9 +41,11 @@ class RequestHandler(SimpleHTTPRequestHandler):
                                client_addr=self.client_address[0], client_port=self.client_address[1],
                                timestamp=now_seconds())
 
-    def generate_response(self, request: HttpRequest) -> HttpResponse:
+    def generate_response(self, request_0: HttpRequest) -> HttpResponse:
         with wrap_context('generating response'):
-            request = request.transform(self.extensions.request_transformers)
+            request = request_0.transform(self.extensions.request_transformers)
+            if request != request_0:
+                log.debug('request transformed')
 
             self.cache.clear_old()
             if self.cache.has_cached_response(request):
@@ -49,8 +53,6 @@ class RequestHandler(SimpleHTTPRequestHandler):
 
             response: HttpResponse = proxy_request(request, base_url=f'{self.config.dst_url}')
             response.log('<< received', self.config.verbose)
-            log.debug('> forwarding response back to client',
-                      addr=request.client_addr, port=request.client_port)
 
             if self.cache.saving_enabled(request):
                 self.cache.save_response(request, response)
@@ -74,7 +76,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
             else:
                 self.wfile.write(response.content)
             self.close_connection = True
-            log.debug('response sent')
+            log.debug('> response sent', client_addr=self.client_address[0], client_port=self.client_address[1])
 
     def send_chunked_response(self, content_chunks: Iterable[bytes]):
         for chunk in content_chunks:
