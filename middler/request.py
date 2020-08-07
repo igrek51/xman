@@ -1,4 +1,5 @@
-from typing import Dict, List, Callable
+import json
+from typing import Dict, List, Callable, Any
 
 from dataclasses import dataclass
 from nuclear.sublog import log
@@ -42,3 +43,8 @@ class HttpRequest(object):
         for transformer in transformers:
             transformed = transformer(transformed)
         return transformed
+
+    def json(self) -> Any:
+        if len(self.content) == 0:
+            return None
+        return json.loads(self.content)

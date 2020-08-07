@@ -67,6 +67,10 @@ class RequestHandler(SimpleHTTPRequestHandler):
                 del response.headers['Content-Encoding']
                 log.debug('removing Content-Encoding header')
 
+            if 'Content-Length' not in response.headers and response.content:
+                response.headers['Content-Length'] = str(len(response.content))
+                log.debug('adding missing Content-Length header')
+
             for name, value in response.headers.items():
                 self.send_header(name, value)
             self.end_headers()

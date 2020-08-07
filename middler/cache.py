@@ -36,13 +36,15 @@ class RequestCache(object):
     def _init_request_cache(self) -> Dict[int, CacheEntry]:
         if self.config.record_file and os.path.isfile(self.config.record_file):
             txt = Path(self.config.record_file).read_text()
+            if not txt:
+                return {}
             entries = json.loads(txt)
             loaded_cache = {}
             for entry in entries:
                 parsed_entry = CacheEntry.from_json(entry)
                 request_hash = self._request_hash(parsed_entry.request)
                 loaded_cache[request_hash] = parsed_entry
-            log.debug(f'loaded request-response pairs', record_file=self.config.record_file,
+            log.debug(f'CACHE: loaded request-response pairs', record_file=self.config.record_file,
                       read_entries=len(entries), distinct_entries=len(loaded_cache))
             return loaded_cache
         return {}
@@ -61,9 +63,9 @@ class RequestCache(object):
     def replay_response(self, request: HttpRequest) -> HttpResponse:
         request_hash = self._request_hash(request)
         if self.config.replay_throttle:
-            log.debug('> Throttled response', hash=request_hash)
+            log.debug('CACHE: Throttled response', hash=request_hash)
             return too_many_requests_response
-        log.debug('> Sending cached response', hash=request_hash)
+        log.debug('CACHE: Found cached response', hash=request_hash)
         return self.cache[request_hash].response
 
     def clear_old(self):
@@ -77,7 +79,7 @@ class RequestCache(object):
         for request_hash in to_remove:
             del self.cache[request_hash]
         if to_remove:
-            log.debug('cleared old cache entries', removed=len(to_remove))
+            log.debug('CACHE: cleared old cache entries', removed=len(to_remove))
 
     def saving_enabled(self, request: HttpRequest) -> bool:
         return (self.config.record or self.config.replay) and self._enabled(request)
@@ -90,7 +92,7 @@ class RequestCache(object):
                 serializable = list(self.cache.values())
                 txt = json.dumps(serializable, sort_keys=True, indent=4, cls=EnhancedJSONEncoder)
                 Path(self.config.record_file).write_text(txt)
-            log.debug(f'+ new request-response recorded', hash=request_hash, total_entries=len(self.cache))
+            log.debug(f'+ CACHE: new request-response recorded', hash=request_hash, total_entries=len(self.cache))
 
     def _request_hash(self, request: HttpRequest) -> int:
         traits_str = str(self._request_traits(request))

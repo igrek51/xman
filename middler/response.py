@@ -1,6 +1,6 @@
 import json
 from http.client import responses
-from typing import Dict, List, Callable
+from typing import Dict, List, Callable, Any
 
 from dataclasses import dataclass
 from nuclear.sublog import log
@@ -43,8 +43,13 @@ class HttpResponse(object):
         self.headers['Content-Length'] = str(len(self.content))
         return self
 
-    def set_json(self, obj: object) -> 'HttpResponse':
+    def set_json(self, obj: Any) -> 'HttpResponse':
         self.content = json.dumps(obj).encode()
         self.headers['Content-Length'] = str(len(self.content))
         self.headers['Content-Type'] = 'application/json'
         return self
+
+    def json(self) -> Any:
+        if len(self.content) == 0:
+            return None
+        return json.loads(self.content)

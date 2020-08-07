@@ -55,6 +55,7 @@ Options:
   --allow-chunking ALLOW_CHUNKING                         - enable sending response in chunks
                                                             Default: True
   --ext EXT                                               - load extensions from Python file
+  -v, --verbose                                           - show more details in output
 
 ```
 
