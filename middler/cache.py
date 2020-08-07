@@ -28,68 +28,78 @@ class CacheEntry(object):
 
 
 class RequestCache(object):
-    def __init__(self, extensions: Extensions):
+    def __init__(self, extensions: Extensions, config: Config):
         self.extensions: Extensions = extensions
+        self.config: Config = config
         self.cache: Dict[int, CacheEntry] = self._init_request_cache()
 
     def _init_request_cache(self) -> Dict[int, CacheEntry]:
-        if Config.record_file and os.path.isfile(Config.record_file):
-            txt = Path(Config.record_file).read_text()
+        if self.config.record_file and os.path.isfile(self.config.record_file):
+            txt = Path(self.config.record_file).read_text()
             entries = json.loads(txt)
             loaded_cache = {}
             for entry in entries:
                 parsed_entry = CacheEntry.from_json(entry)
-                request_hash = self.request_hash(parsed_entry.request)
+                request_hash = self._request_hash(parsed_entry.request)
                 loaded_cache[request_hash] = parsed_entry
-            log.debug(f'loaded request-response pairs', record_file=Config.record_file,
+            log.debug(f'loaded request-response pairs', record_file=self.config.record_file,
                       read_entries=len(entries), distinct_entries=len(loaded_cache))
             return loaded_cache
         return {}
 
-    def exists(self, request: HttpRequest) -> bool:
-        request_hash = self.request_hash(request)
-        return request_hash in self.cache
+    def has_cached_response(self, request: HttpRequest) -> bool:
+        return self.config.replay and self._enabled(request) and self._request_hash(request) in self.cache
+
+    def _enabled(self, request: HttpRequest) -> bool:
+        if self.extensions.cache_predicate is None:
+            return True
+        return self.extensions.cache_predicate(request)
 
     def get(self, request_hash: int) -> CacheEntry:
         return self.cache[request_hash]
 
     def replay_response(self, request: HttpRequest) -> HttpResponse:
-        request_hash = self.request_hash(request)
-        if Config.replay_throttle:
+        request_hash = self._request_hash(request)
+        if self.config.replay_throttle:
             log.debug('> Throttled response', hash=request_hash)
             return too_many_requests_response
         log.debug('> Sending cached response', hash=request_hash)
         return self.cache[request_hash].response
 
-    def clear_old_cache(self):
+    def clear_old(self):
+        if not self.config.replay_clear_cache:
+            return
         to_remove = []
         now_timestamp: float = now_seconds()
         for request_hash, entry in self.cache.items():
-            if now_timestamp - entry.request.timestamp > Config.replay_clear_cache_seconds:
+            if now_timestamp - entry.request.timestamp > self.config.replay_clear_cache_seconds:
                 to_remove.append(request_hash)
         for request_hash in to_remove:
             del self.cache[request_hash]
         if to_remove:
             log.debug('cleared old cache entries', removed=len(to_remove))
 
+    def saving_enabled(self, request: HttpRequest) -> bool:
+        return (self.config.record or self.config.replay) and self._enabled(request)
+
     def save_response(self, request: HttpRequest, response: HttpResponse):
-        request_hash = self.request_hash(request)
+        request_hash = self._request_hash(request)
         if request_hash not in self.cache:
             self.cache[request_hash] = CacheEntry(request, response)
-            if Config.record and Config.record_file:
+            if self.config.record and self.config.record_file:
                 serializable = list(self.cache.values())
                 txt = json.dumps(serializable, sort_keys=True, indent=4, cls=EnhancedJSONEncoder)
-                Path(Config.record_file).write_text(txt)
+                Path(self.config.record_file).write_text(txt)
             log.debug(f'+ new request-response recorded', hash=request_hash, total_entries=len(self.cache))
 
-    def request_hash(self, request: HttpRequest) -> int:
-        traits_str = str(self.request_traits(request))
-        return zlib.adler32(traits_str.encode('utf-8'))
+    def _request_hash(self, request: HttpRequest) -> int:
+        traits_str = str(self._request_traits(request))
+        return zlib.adler32(traits_str.encode())
 
-    def request_traits(self, request: HttpRequest) -> Tuple:
-        if self.extensions.request_traits_extractor is None:
+    def _request_traits(self, request: HttpRequest) -> Tuple:
+        if self.extensions.cache_traits_extractor is None:
             return default_request_traits(request)
-        return self.extensions.request_traits_extractor(request)
+        return self.extensions.cache_traits_extractor(request)
 
 
 def default_request_traits(request: HttpRequest) -> Tuple:
@@ -97,7 +107,7 @@ def default_request_traits(request: HttpRequest) -> Tuple:
 
 
 def sorted_dict_trait(d: Dict[str, Any]) -> List[Tuple[str, Any]]:
-    return list(sorted(d.items(), key=lambda t: t[0]))
+    return sorted([(k, v) for k, v in d.items()], key=lambda t: t[0])
 
 
 too_many_requests_response = HttpResponse(status_code=429, headers={}, content=b'')

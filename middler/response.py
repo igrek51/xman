@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List, Callable
 
 from dataclasses import dataclass
 from nuclear.sublog import log
@@ -18,3 +18,9 @@ class HttpResponse(object):
     def from_json(data: dict) -> 'HttpResponse':
         data['content'] = data.get('content').encode('utf-8')
         return HttpResponse(**data)
+
+    def transform(self, transformers: List[Callable[['HttpResponse'], 'HttpResponse']]) -> 'HttpResponse':
+        transformed = self
+        for transformer in transformers:
+            transformed = transformer(transformed)
+        return transformed

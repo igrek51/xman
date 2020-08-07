@@ -8,7 +8,7 @@ from middler.response import HttpResponse
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-def send_to(request: HttpRequest, base_url: str) -> HttpResponse:
+def proxy_request(request: HttpRequest, base_url: str) -> HttpResponse:
     with wrap_context('proxying to destination', base_url=base_url):
         url = f'{base_url}{request.path}'
         log.debug(f'>> proxying to {url}')

@@ -1,4 +1,4 @@
-from typing import Dict, Tuple
+from typing import Dict, List, Callable
 
 from dataclasses import dataclass
 from nuclear.sublog import log
@@ -25,3 +25,9 @@ class HttpRequest(object):
             log.info(f'< Incoming: {self.requestline}', headers=self.headers, content='\n'+self.content.decode('utf-8'))
         else:
             log.info(f'< Incoming: {self.requestline}', headers=self.headers)
+
+    def transform(self, transformers: List[Callable[['HttpRequest'], 'HttpRequest']]) -> 'HttpRequest':
+        transformed = self
+        for transformer in transformers:
+            transformed = transformer(transformed)
+        return transformed

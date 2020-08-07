@@ -1,21 +1,22 @@
 import json
 import sys
 from http.server import SimpleHTTPRequestHandler
-from typing import Dict, Iterable, Sequence, Callable, List
+from typing import Dict, Iterable, Sequence
 
 from nuclear.sublog import log, log_error, wrap_context
 
 from middler.cache import RequestCache, now_seconds
 from middler.config import Config
 from middler.extension import Extensions
-from middler.forward import send_to
+from middler.proxy import proxy_request
 from middler.request import HttpRequest
 from middler.response import HttpResponse
 
 
 class RequestHandler(SimpleHTTPRequestHandler):
     extensions: Extensions
-    request_cache: RequestCache
+    config: Config
+    cache: RequestCache
 
     def handle_request(self):
         with log_error():
@@ -24,6 +25,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
                 incoming_request = self.incoming_request()
                 incoming_request.log()
                 response = self.generate_response(incoming_request)
+                response = response.transform(self.extensions.response_transformers)
                 self.respond_to_client(response)
 
     def incoming_request(self) -> HttpRequest:
@@ -33,28 +35,24 @@ class RequestHandler(SimpleHTTPRequestHandler):
             content_len = int(headers_dict.get('Content-Length', 0))
             content: bytes = self.rfile.read(content_len) if content_len else b''
             return HttpRequest(requestline=self.requestline, method=method, path=self.path,
-                               headers=headers_dict,
-                               content=content, client_addr=self.client_address[0],
-                               client_port=self.client_address[1],
+                               headers=headers_dict, content=content,
+                               client_addr=self.client_address[0], client_port=self.client_address[1],
                                timestamp=now_seconds())
 
-    def generate_response(self, incoming_request: HttpRequest) -> HttpResponse:
+    def generate_response(self, request: HttpRequest) -> HttpResponse:
         with wrap_context('generating response'):
-            for transformer in self.extensions.transformers:
-                incoming_request = transformer(incoming_request)
+            request = request.transform(self.extensions.request_transformers)
 
-            if Config.replay_clear_cache:
-                self.request_cache.clear_old_cache()
+            self.cache.clear_old()
+            if self.cache.has_cached_response(request):
+                return self.cache.replay_response(request).log('> returning')
 
-            if self.request_cache.exists(incoming_request) and Config.replay:
-                return self.request_cache.replay_response(incoming_request).log('> returning')
-
-            response: HttpResponse = send_to(incoming_request, base_url=f'{Config.dst_url}').log('<< received')
+            response: HttpResponse = proxy_request(request, base_url=f'{self.config.dst_url}').log('<< received')
             log.debug('> forwarding response back to client',
-                      addr=incoming_request.client_addr, port=incoming_request.client_port)
+                      addr=request.client_addr, port=request.client_port)
 
-            if Config.record or Config.replay:
-                self.request_cache.save_response(incoming_request, response)
+            if self.cache.saving_enabled(request):
+                self.cache.save_response(request, response)
 
             return response
 
@@ -70,7 +68,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
                 self.send_header(name, value)
             self.end_headers()
 
-            if Config.allow_chunking and response.headers.get('Transfer-Encoding') == 'chunked':
+            if self.config.allow_chunking and response.headers.get('Transfer-Encoding') == 'chunked':
                 self.send_chunked_response(chunks(response.content, 512))
             else:
                 self.wfile.write(response.content)
