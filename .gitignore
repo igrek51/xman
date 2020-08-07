@@ -11,5 +11,5 @@ dist/
 .idea
 *.iml
 venv/
-
+*_dev.*
 tape.json

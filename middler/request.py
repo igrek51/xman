@@ -20,8 +20,10 @@ class HttpRequest(object):
         data['content'] = data.get('content').encode('utf-8')
         return HttpRequest(**data)
 
-    def log(self):
-        if self.content:
+    def log(self, verbose: bool):
+        if not verbose:
+            log.info(f'< Incoming: {self.requestline}')
+        elif self.content:
             log.info(f'< Incoming: {self.requestline}', headers=self.headers, content='\n'+self.content.decode('utf-8'))
         else:
             log.info(f'< Incoming: {self.requestline}', headers=self.headers)

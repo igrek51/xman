@@ -12,7 +12,7 @@ from middler.extension import load_extensions
 
 def setup_proxy(listen_port: int, listen_ssl: bool, dst_url: str, record: bool, record_file: str, replay: bool,
                 replay_throttle: bool, replay_clear_cache: bool, replay_clear_cache_seconds: int, allow_chunking: bool,
-                ext: str):
+                ext: str, verbose: bool):
     with logerr():
         with wrap_context('initialization'):
             extensions = load_extensions(ext)
@@ -25,6 +25,7 @@ def setup_proxy(listen_port: int, listen_ssl: bool, dst_url: str, record: bool, 
                 replay_clear_cache=replay_clear_cache,
                 replay_clear_cache_seconds=replay_clear_cache_seconds,
                 allow_chunking=allow_chunking,
+                verbose=verbose,
             )
 
             RequestHandler.extensions = extensions
@@ -43,7 +44,7 @@ def setup_proxy(listen_port: int, listen_ssl: bool, dst_url: str, record: bool, 
                 httpd.server_close()
 
 
-def load_config(config_builder: Optional[Callable[[...], Config]]) -> Optional[Config]:
+def load_config(config_builder: Optional[Callable[[], Config]]) -> Optional[Config]:
     if config_builder is None:
         return None
     return config_builder()

@@ -23,9 +23,9 @@ class RequestHandler(SimpleHTTPRequestHandler):
             with wrap_context('handling request'):
                 self.connection.settimeout(10)
                 incoming_request = self.incoming_request()
-                incoming_request.log()
+                incoming_request.log(self.config.verbose)
                 response = self.generate_response(incoming_request)
-                response = response.transform(self.extensions.response_transformers)
+                response = response.transform(self.extensions.response_transformers, incoming_request)
                 self.respond_to_client(response)
 
     def incoming_request(self) -> HttpRequest:
@@ -45,9 +45,10 @@ class RequestHandler(SimpleHTTPRequestHandler):
 
             self.cache.clear_old()
             if self.cache.has_cached_response(request):
-                return self.cache.replay_response(request).log('> returning')
+                return self.cache.replay_response(request).log('> returning', self.config.verbose)
 
-            response: HttpResponse = proxy_request(request, base_url=f'{self.config.dst_url}').log('<< received')
+            response: HttpResponse = proxy_request(request, base_url=f'{self.config.dst_url}')
+            response.log('<< received', self.config.verbose)
             log.debug('> forwarding response back to client',
                       addr=request.client_addr, port=request.client_port)
 

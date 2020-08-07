@@ -11,3 +11,4 @@ class Config(object):
     replay_clear_cache: bool
     replay_clear_cache_seconds: int
     allow_chunking: bool
+    verbose: bool

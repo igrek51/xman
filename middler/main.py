@@ -1,4 +1,4 @@
-from nuclear import CliBuilder, parameter, argument
+from nuclear import CliBuilder, parameter, argument, flag
 from nuclear.types.boolean import boolean
 
 from .setup import setup_proxy
@@ -20,4 +20,5 @@ def main():
         parameter('replay_clear_cache_seconds', help='clearing cache interval in seconds', type=int, default=1 * 60),
         parameter('allow_chunking', help='enable sending response in chunks', type=boolean, default=True),
         parameter('ext', help='load extensions from Python file'),
+        flag('verbose', 'v', help='show more details in output'),
     ).run()
