@@ -8,10 +8,10 @@ from typing import Dict, Tuple, List, Any
 from dataclasses import dataclass, is_dataclass, asdict
 from nuclear.sublog import log
 
-from midman.config import Config
-from midman.extension import Extensions
-from midman.request import HttpRequest
-from midman.response import HttpResponse
+from middler.config import Config
+from middler.extension import Extensions
+from middler.request import HttpRequest
+from middler.response import HttpResponse
 
 
 @dataclass

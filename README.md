@@ -1,33 +1,33 @@
-# midman
-[![GitHub version](https://badge.fury.io/gh/igrek51%2Fmidman.svg)](https://github.com/igrek51/midman)
-[![PyPI version](https://badge.fury.io/py/midman.svg)](https://pypi.org/project/midman)
+# middler
+[![GitHub version](https://badge.fury.io/gh/igrek51%2Fmiddler.svg)](https://github.com/igrek51/middler)
+[![PyPI version](https://badge.fury.io/py/middler.svg)](https://pypi.org/project/middler)
 
-midman is a HTTP proxy recording & replaying requests. It can:  
+middler is a HTTP proxy recording & replaying requests. It can:  
 - forward requests to other address
 - return cached results immediately without need to proxying
 - record incoming requests to a file, restore responses from there
 - throttle requests when clients are making them too frequently
 - transform requests on the fly (eg. replace path with regex)
 
-With `midman` you can setup a mock server imitating real server:  
+With `middler` you can setup a mock server imitating real server:  
 1. Configure forwarding to real server. Enable recording requests and replaying responses,
 2. Make some typical requests. Request-response entries will be recorded to a file.
 3. You can turn off real server. Responses are returned from cache.
 
 # Installation
 ```shell
-pip3 install midman
+pip3 install middler
 ```
 
 Python 3.6 (or newer) is required.
 
 # Usage
-See help by typing `midman`:
+See help by typing `middler`:
 ```console
-midman v0.1.1 (nuclear v1.1.7) - HTTP proxy recording & replaying requests
+middler v0.1.1 (nuclear v1.1.7) - HTTP proxy recording & replaying requests
 
 Usage:
-midman [OPTIONS] [DST_URL]
+middler [OPTIONS] [DST_URL]
 
 Arguments:
    [DST_URL] - destination base url
@@ -61,7 +61,7 @@ Options:
 Listne on SSL port 8443, forward requests to http://127.0.0.1:8000 with default caching.
 When same request comes, cached response will be returned. 
 ```console
-$ midman http://127.0.0.1:8000 --listen-port 8443 --listen-ssl=true --replay=true
+$ middler http://127.0.0.1:8000 --listen-port 8443 --listen-ssl=true --replay=true
 [2020-07-29 18:19:58] [DEBUG] loaded request-response pairs record_file=tape.json read_entries=2 distinct_entries=1
 [2020-07-29 18:19:58] [INFO ] Listening on HTTPS port 8443...
 ```
@@ -83,7 +83,7 @@ from typing import List, Callable, Tuple
 
 from nuclear.sublog import log
 
-from midman.request import HttpRequest
+from middler.request import HttpRequest
 
 
 def _transformer_shorten_path(request: HttpRequest) -> HttpRequest:

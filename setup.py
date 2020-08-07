@@ -1,5 +1,5 @@
 import setuptools
-from midman import __version__
+from middler import __version__
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -8,14 +8,14 @@ with open("requirements.txt", "r") as fh:
     install_requires = fh.read().splitlines()
 
 setuptools.setup(
-    name="midman",
+    name="middler",
     version=__version__,
     author="igrek51",
     author_email="igrek51.dev@gmail.com",
     description="HTTP proxy recording & replaying requests",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/igrek51/midman",
+    url="https://github.com/igrek51/middler",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -27,7 +27,7 @@ setuptools.setup(
     python_requires='>=3.6.0',
     entry_points={
         "console_scripts": [
-            "midman = midman:main",
+            "middler = middler:main",
         ],
     },
 )

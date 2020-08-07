@@ -5,12 +5,12 @@ from typing import Dict, Iterable, Sequence, Callable, List
 
 from nuclear.sublog import log, log_error, wrap_context
 
-from midman.cache import RequestCache, now_seconds
-from midman.config import Config
-from midman.extension import Extensions
-from midman.forward import send_to
-from midman.request import HttpRequest
-from midman.response import HttpResponse
+from middler.cache import RequestCache, now_seconds
+from middler.config import Config
+from middler.extension import Extensions
+from middler.forward import send_to
+from middler.request import HttpRequest
+from middler.response import HttpResponse
 
 
 class RequestHandler(SimpleHTTPRequestHandler):

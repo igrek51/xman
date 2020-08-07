@@ -3,7 +3,7 @@ from typing import List, Callable, Tuple
 
 from nuclear.sublog import log
 
-from midman.request import HttpRequest
+from middler.request import HttpRequest
 
 
 def _transformer_shorten_path(request: HttpRequest) -> HttpRequest:

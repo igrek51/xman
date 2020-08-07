@@ -6,7 +6,7 @@ from .version import __version__
 
 
 def main():
-    CliBuilder('midman', run=setup_proxy, help_on_empty=True, version=__version__,
+    CliBuilder('middler', run=setup_proxy, help_on_empty=True, version=__version__,
                help='HTTP proxy recording & replaying requests').has(
         argument('dst_url', help='destination base url', required=False, default='http://127.0.0.1:7090'),
         parameter('listen_port', help='listen port for incoming requests', type=int, default=8080),

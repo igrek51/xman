@@ -3,7 +3,7 @@ from importlib.machinery import SourceFileLoader
 
 from dataclasses import dataclass, field
 from nuclear.sublog import log
-from midman.request import HttpRequest
+from middler.request import HttpRequest
 
 
 @dataclass
@@ -18,7 +18,7 @@ def load_extensions(extension_path: str) -> Extensions:
 
     log.debug(f'loading extensions', path=extension_path)
     extensions = Extensions()
-    ext_module = SourceFileLoader("midman.transformer", extension_path).load_module()
+    ext_module = SourceFileLoader("middler.transformer", extension_path).load_module()
 
     if hasattr(ext_module, 'transformers'):
         transformers = ext_module.transformers

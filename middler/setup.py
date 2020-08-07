@@ -3,10 +3,10 @@ from socketserver import TCPServer
 
 from nuclear.sublog import logerr, wrap_context, log
 
-from midman.cache import RequestCache
-from midman.config import Config
-from midman.handler import RequestHandler
-from midman.extension import load_extensions
+from middler.cache import RequestCache
+from middler.config import Config
+from middler.handler import RequestHandler
+from middler.extension import load_extensions
 
 
 def setup_proxy(listen_port: int, listen_ssl: int, dst_url: str, record: bool, record_file: str, replay: int,
