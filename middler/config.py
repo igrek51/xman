@@ -3,6 +3,8 @@ from dataclasses import dataclass
 
 @dataclass
 class Config(object):
+    listen_port: int
+    listen_ssl: bool
     dst_url: str
     record: bool
     record_file: str

@@ -50,12 +50,12 @@ class RequestCache(object):
         return {}
 
     def has_cached_response(self, request: HttpRequest) -> bool:
-        return self.config.replay and self._enabled(request) and self._request_hash(request) in self.cache
+        return self.config.replay and self._can_be_cached(request) and self._request_hash(request) in self.cache
 
-    def _enabled(self, request: HttpRequest) -> bool:
-        if self.extensions.cache_predicate is None:
+    def _can_be_cached(self, request: HttpRequest) -> bool:
+        if self.extensions.can_be_cached is None:
             return True
-        return self.extensions.cache_predicate(request)
+        return self.extensions.can_be_cached(request)
 
     def get(self, request_hash: int) -> CacheEntry:
         return self.cache[request_hash]
@@ -82,7 +82,7 @@ class RequestCache(object):
             log.debug('CACHE: cleared old cache entries', removed=len(to_remove))
 
     def saving_enabled(self, request: HttpRequest) -> bool:
-        return (self.config.record or self.config.replay) and self._enabled(request)
+        return (self.config.record or self.config.replay) and self._can_be_cached(request)
 
     def save_response(self, request: HttpRequest, response: HttpResponse):
         request_hash = self._request_hash(request)
@@ -99,9 +99,9 @@ class RequestCache(object):
         return zlib.adler32(traits_str.encode())
 
     def _request_traits(self, request: HttpRequest) -> Tuple:
-        if self.extensions.cache_traits_extractor is None:
+        if self.extensions.cache_request_traits is None:
             return default_request_traits(request)
-        return self.extensions.cache_traits_extractor(request)
+        return self.extensions.cache_request_traits(request)
 
 
 def default_request_traits(request: HttpRequest) -> Tuple:

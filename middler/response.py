@@ -1,6 +1,6 @@
 import json
 from http.client import responses
-from typing import Dict, List, Callable, Any
+from typing import Dict, Callable, Any, Optional
 
 from dataclasses import dataclass
 from nuclear.sublog import log
@@ -27,16 +27,16 @@ class HttpResponse(object):
         data['content'] = data.get('content').encode()
         return HttpResponse(**data)
 
-    def transform(self, transformers: List[Callable[[HttpRequest, 'HttpResponse'], 'HttpResponse']],
+    def transform(self, transformer: Optional[Callable[[HttpRequest, 'HttpResponse'], 'HttpResponse']],
                   request: HttpRequest) -> 'HttpResponse':
-        transformed = HttpResponse(
+        if transformer is None:
+            return self
+        cloned = HttpResponse(
             status_code=self.status_code,
             headers=self.headers,
             content=self.content,
         )
-        for transformer in transformers:
-            transformed = transformer(request, transformed)
-        return transformed
+        return transformer(request, cloned)
 
     def set_content(self, content: str) -> 'HttpResponse':
         self.content = content.encode()

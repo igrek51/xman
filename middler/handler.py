@@ -25,7 +25,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
                 incoming_request = self.incoming_request()
                 incoming_request.log(self.config.verbose)
                 response_0 = self.generate_response(incoming_request)
-                response = response_0.transform(self.extensions.response_transformers, incoming_request)
+                response = response_0.transform(self.extensions.transform_response, incoming_request)
                 if response != response_0:
                     response.log('response transformed', self.config.verbose)
                 self.respond_to_client(response)
@@ -43,7 +43,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
 
     def generate_response(self, request_0: HttpRequest) -> HttpResponse:
         with wrap_context('generating response'):
-            request = request_0.transform(self.extensions.request_transformers)
+            request = request_0.transform(self.extensions.transform_request)
             if request != request_0:
                 log.debug('request transformed')
 

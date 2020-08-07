@@ -1,5 +1,5 @@
 import json
-from typing import Dict, List, Callable, Any
+from typing import Dict, Callable, Any, Optional
 
 from dataclasses import dataclass
 from nuclear.sublog import log
@@ -29,8 +29,10 @@ class HttpRequest(object):
         else:
             log.info(f'< Incoming: {self.requestline}', headers=self.headers)
 
-    def transform(self, transformers: List[Callable[['HttpRequest'], 'HttpRequest']]) -> 'HttpRequest':
-        transformed = HttpRequest(
+    def transform(self, transformer: Optional[Callable[['HttpRequest'], 'HttpRequest']]) -> 'HttpRequest':
+        if transformer is None:
+            return self
+        cloned = HttpRequest(
             requestline=self.requestline,
             method=self.method,
             path=self.path,
@@ -40,9 +42,7 @@ class HttpRequest(object):
             client_port=self.client_port,
             timestamp=self.timestamp,
         )
-        for transformer in transformers:
-            transformed = transformer(transformed)
-        return transformed
+        return transformer(cloned)
 
     def json(self) -> Any:
         if len(self.content) == 0:

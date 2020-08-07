@@ -16,7 +16,9 @@ def setup_proxy(listen_port: int, listen_ssl: bool, dst_url: str, record: bool, 
     with logerr():
         with wrap_context('initialization'):
             extensions = load_extensions(ext)
-            config = load_config(extensions.config_builder) or Config(
+            config = Config(
+                listen_port=listen_port,
+                listen_ssl=listen_ssl,
                 dst_url=dst_url,
                 record=record,
                 record_file=record_file,
@@ -27,24 +29,20 @@ def setup_proxy(listen_port: int, listen_ssl: bool, dst_url: str, record: bool, 
                 allow_chunking=allow_chunking,
                 verbose=verbose,
             )
+            if extensions.override_config:
+                extensions.override_config(config)
 
             RequestHandler.extensions = extensions
             RequestHandler.config = config
             RequestHandler.cache = RequestCache(extensions, config)
 
             TCPServer.allow_reuse_address = True
-            httpd = TCPServer(("", listen_port), RequestHandler)
-            if listen_ssl:
+            httpd = TCPServer(("", config.listen_port), RequestHandler)
+            if config.listen_ssl:
                 httpd.socket = ssl.wrap_socket(httpd.socket, certfile='./dev-cert.pem', server_side=True)
-            scheme = 'HTTPS' if listen_ssl else 'HTTP'
-            log.info(f'Listening on {scheme} port {listen_port}...')
+            scheme = 'HTTPS' if config.listen_ssl else 'HTTP'
+            log.info(f'Listening on {scheme} port {config.listen_port}...')
             try:
                 httpd.serve_forever()
             finally:
                 httpd.server_close()
-
-
-def load_config(config_builder: Optional[Callable[[], Config]]) -> Optional[Config]:
-    if config_builder is None:
-        return None
-    return config_builder()

@@ -1,7 +1,7 @@
-from typing import Callable, List, Tuple, Optional
 from importlib.machinery import SourceFileLoader
+from typing import Callable, Tuple, Optional
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, fields
 from nuclear.sublog import log
 
 from middler.config import Config
@@ -11,11 +11,11 @@ from middler.response import HttpResponse
 
 @dataclass
 class Extensions(object):
-    request_transformers: List[Callable[[HttpRequest], HttpRequest]] = field(default_factory=lambda: [])
-    response_transformers: List[Callable[[HttpRequest, HttpResponse], HttpResponse]] = field(default_factory=lambda: [])
-    cache_traits_extractor: Optional[Callable[[HttpRequest], Tuple]] = None
-    cache_predicate: Optional[Callable[[HttpRequest], bool]] = None
-    config_builder: Optional[Callable[[], Config]] = None
+    transform_request: Optional[Callable[[HttpRequest], HttpRequest]] = None
+    transform_response: Optional[Callable[[HttpRequest, HttpResponse], HttpResponse]] = None
+    can_be_cached: Optional[Callable[[HttpRequest], bool]] = None
+    cache_request_traits: Optional[Callable[[HttpRequest], Tuple]] = None
+    override_config: Optional[Callable[[Config], None]] = None
 
 
 def load_extensions(extension_path: str) -> Extensions:
@@ -25,27 +25,12 @@ def load_extensions(extension_path: str) -> Extensions:
     log.debug(f'loading extensions', path=extension_path)
     ext = Extensions()
     ext_module = SourceFileLoader("middler.transformer", extension_path).load_module()
-
-    if hasattr(ext_module, 'request_transformers'):
-        ext.request_transformers = ext_module.request_transformers
-        log.debug(f'loaded request_transformers', count=len(ext.request_transformers),
-                  names=','.join([t.__name__ for t in ext.request_transformers]))
-
-    if hasattr(ext_module, 'response_transformers'):
-        ext.response_transformers = ext_module.response_transformers
-        log.debug(f'loaded response_transformers', count=len(ext.response_transformers),
-                  names=','.join([t.__name__ for t in ext.response_transformers]))
-
-    if hasattr(ext_module, 'cache_traits_extractor'):
-        ext.cache_traits_extractor = ext_module.cache_traits_extractor
-        log.debug(f'loaded cache_traits_extractor', name=ext.cache_traits_extractor.__name__)
-
-    if hasattr(ext_module, 'cache_predicate'):
-        ext.cache_predicate = ext_module.cache_predicate
-        log.debug(f'loaded cache_predicate', name=ext.cache_predicate.__name__)
-
-    if hasattr(ext_module, 'config_builder'):
-        ext.config_builder = ext_module.config_builder
-        log.debug(f'loaded config_builder', name=ext.config_builder.__name__)
+    ext_names = [field.name for field in fields(Extensions)]
+    for ext_name in ext_names:
+        if hasattr(ext_module, ext_name):
+            ext_value = getattr(ext_module, ext_name)
+            if ext_value:
+                setattr(ext, ext_name, ext_value)
+                log.debug(f'loaded {ext_name} extension')
 
     return ext
