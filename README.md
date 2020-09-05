@@ -127,6 +127,11 @@ def override_config(config: Config):
 ```
 
 # Run in docker
+Add custom arguments at the end:
+```bash
+docker run --rm -it --network=host --name=xman igrek5151/xman:latest
+```
+
 Create and customize `ext.py` and run:
 ```bash
 docker run --rm -it --network=host -v `pwd`/ext.py:/ext.py \
