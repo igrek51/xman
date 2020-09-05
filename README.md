@@ -1,7 +1,7 @@
 # Xman
-![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/igrek51/xman)
-![PyPI](https://img.shields.io/pypi/v/x-man)
-![Docker Image Version (latest by date)](https://img.shields.io/docker/v/igrek5151/xman)
+[![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/igrek51/xman?label=github)](https://github.com/igrek51/xman)
+[![PyPI](https://img.shields.io/pypi/v/x-man)](https://pypi.org/project/x-man)
+[![Docker Image Version (latest by date)](https://img.shields.io/docker/v/igrek5151/xman?label=docker)](https://hub.docker.com/repository/docker/igrek5151/xman)
 
 `Xman` is a HTTP proxy recording & replaying requests.  
 It acts as an extensible "Man in the middle" server, which can:  
