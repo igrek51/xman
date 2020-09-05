@@ -3,9 +3,9 @@ services:
 
   xman:
     build: .
-    image: xman
+    image: igrek5151/xman:latest
     container_name: xman
     restart: unless-stopped
     network_mode: host
     volumes:
-      - ./extension/ext.py:/ext.py
+      - ./ext.py:/ext.py

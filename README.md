@@ -1,6 +1,7 @@
 # Xman
-[![GitHub version](https://badge.fury.io/gh/igrek51%2Fxman.svg)](https://github.com/igrek51/xman)
-[![PyPI version](https://badge.fury.io/py/x-man.svg)](https://pypi.org/project/x-man)
+![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/igrek51/xman)
+![PyPI](https://img.shields.io/pypi/v/x-man)
+![Docker Image Version (latest by date)](https://img.shields.io/docker/v/igrek5151/xman)
 
 `Xman` is a HTTP proxy recording & replaying requests.  
 It acts as an extensible "Man in the middle" server, which can:  
@@ -126,7 +127,15 @@ def override_config(config: Config):
 ```
 
 # Run in docker
+Create and customize `ext.py` and run:
+```bash
+docker run --rm -it --network=host -v `pwd`/ext.py:/ext.py \
+  --name=xman igrek5151/xman:latest \
+  --ext=/ext.py
 ```
-docker-compose build
-docker run --rm -it --name=xman --network=host -v `pwd`/extension/ext.py:/ext.py xman:latest --ext=/ext.py
+Or run in background:
+```bash
+docker run -d --network=host -v `pwd`/ext.py:/ext.py \
+  --name=xman igrek5151/xman:latest \
+  --ext=/ext.py
 ```
