@@ -5,12 +5,12 @@ from typing import Dict, Iterable, Sequence
 
 from nuclear.sublog import log, log_error, wrap_context
 
-from middler.cache import RequestCache, now_seconds
-from middler.config import Config
-from middler.extension import Extensions
-from middler.proxy import proxy_request
-from middler.request import HttpRequest
-from middler.response import HttpResponse
+from .cache import RequestCache, now_seconds
+from .config import Config
+from .extension import Extensions
+from .proxy import proxy_request
+from .request import HttpRequest
+from .response import HttpResponse
 
 
 class RequestHandler(SimpleHTTPRequestHandler):

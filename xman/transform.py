@@ -2,7 +2,7 @@ import re
 
 from nuclear.sublog import log
 
-from middler.request import HttpRequest
+from .request import HttpRequest
 
 
 def replace_request_path(request: HttpRequest, match_regex: str, replace_regex: str) -> HttpRequest:

@@ -4,9 +4,9 @@ from typing import Callable, Tuple, Optional
 from dataclasses import dataclass, fields
 from nuclear.sublog import log
 
-from middler.config import Config
-from middler.request import HttpRequest
-from middler.response import HttpResponse
+from .config import Config
+from .request import HttpRequest
+from .response import HttpResponse
 
 
 @dataclass
@@ -24,7 +24,7 @@ def load_extensions(extension_path: str) -> Extensions:
 
     log.debug(f'loading extensions', path=extension_path)
     ext = Extensions()
-    ext_module = SourceFileLoader("middler.transformer", extension_path).load_module()
+    ext_module = SourceFileLoader("xman.transformer", extension_path).load_module()
     ext_names = [field.name for field in fields(Extensions)]
     for ext_name in ext_names:
         if hasattr(ext_module, ext_name):

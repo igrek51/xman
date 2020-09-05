@@ -1,0 +1,11 @@
+version: '3'
+services:
+
+  xman:
+    build: .
+    image: xman
+    container_name: xman
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./extension/ext.py:/ext.py

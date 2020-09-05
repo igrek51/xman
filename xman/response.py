@@ -5,7 +5,7 @@ from typing import Dict, Callable, Any, Optional
 from dataclasses import dataclass
 from nuclear.sublog import log
 
-from middler.request import HttpRequest
+from .request import HttpRequest
 
 
 @dataclass

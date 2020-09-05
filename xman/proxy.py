@@ -2,8 +2,8 @@ import requests
 import urllib3
 from nuclear.sublog import log, wrap_context
 
-from middler.request import HttpRequest
-from middler.response import HttpResponse
+from .request import HttpRequest
+from .response import HttpResponse
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 

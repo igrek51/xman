@@ -1,33 +1,35 @@
-# middler
-[![GitHub version](https://badge.fury.io/gh/igrek51%2Fmiddler.svg)](https://github.com/igrek51/middler)
-[![PyPI version](https://badge.fury.io/py/middler.svg)](https://pypi.org/project/middler)
+# Xman
+[![GitHub version](https://badge.fury.io/gh/igrek51%2Fxman.svg)](https://github.com/igrek51/xman)
+[![PyPI version](https://badge.fury.io/py/x-man.svg)](https://pypi.org/project/x-man)
 
-middler is a HTTP proxy recording & replaying requests. It can:  
+`Xman` is a HTTP proxy recording & replaying requests.  
+It acts as an extensible "Man in the middle" server, which can:  
 - forward requests to other address
 - return cached results immediately without need to proxying
 - record incoming requests to a file, restore responses from there
 - throttle requests when clients are making them too frequently
-- transform requests on the fly (eg. replace path with regex)
+- transform requests & responses on the fly (eg. replace path with regex)
 
-With `middler` you can setup a mock server imitating real server:  
-1. Configure forwarding to real server. Enable recording requests and replaying responses,
+With `xman` you can setup a mock server imitating a real server:  
+1. Configure forwarding to a real server. Enable recording requests and replaying responses,
 2. Make some typical requests. Request-response entries will be recorded to a file.
-3. You can turn off real server. Responses are returned from cache.
+3. You can turn off real server now. Responses are returned from cache.
+4. Use it to setup lighweight HTTP service mock.
 
 # Installation
 ```shell
-pip3 install middler
+pip3 install x-man
 ```
 
 Python 3.6 (or newer) is required.
 
 # Usage
-See help by typing `middler`:
+See help by typing `xman`:
 ```console
-middler v0.1.1 (nuclear v1.1.7) - HTTP proxy recording & replaying requests
+xman v0.1.2 (nuclear v1.1.9) - HTTP proxy recording & replaying requests
 
 Usage:
-middler [OPTIONS] [DST_URL]
+xman [OPTIONS] [DST_URL]
 
 Arguments:
    [DST_URL] - destination base url
@@ -59,51 +61,72 @@ Options:
 
 ```
 
-Listne on SSL port 8443, forward requests to http://127.0.0.1:8000 with default caching.
+Listen on SSL port 8443, forward requests to http://127.0.0.1:8000 with caching.
 When same request comes, cached response will be returned. 
 ```console
-$ middler http://127.0.0.1:8000 --listen-port 8443 --listen-ssl=true --replay=true
+$ xman http://127.0.0.1:8000 --listen-port 8443 --listen-ssl=true --replay=true
 [2020-07-29 18:19:58] [DEBUG] loaded request-response pairs record_file=tape.json read_entries=2 distinct_entries=1
 [2020-07-29 18:19:58] [INFO ] Listening on HTTPS port 8443...
 ```
 
 # Extensions
 If you need more customization, you can specify extension file, where you can implement your custom behaviour.
-In order to do that you must create Python script and pass it by parameter `--ext ext.py`.
+In order to do that you must create Python script and pass its filename by parameter: `xman --ext ext.py`.
 
-In extension file you can define custom comparator deciding which requests should be treated as the same.
-Assign your function to `request_traits_extractor: Callable[[HttpRequest], Tuple]` variable in given extension file.
+In extension file you can specify request / response mappers or custom comparator deciding which requests should be treated as the same. Using that you can achieve custom behaviour for some particular type of requests.
 
-Custom rules for transforming requests may be assigned to `transformers: List[Callable[[HttpRequest], HttpRequest]]` variable.
+Implement your function in place of one of the following functions:
+- `transform_request(request: HttpRequest) -> HttpRequest` - Transforms each incoming Request before further processing (caching, forwarding).
+- `transform_response(request: HttpRequest, response: HttpResponse) -> HttpResponse` - Transforms each Response before sending it.
+- `can_be_cached(request: HttpRequest) -> bool` - Indicates whether particular request could be saved / restored from cache.
+- `cache_request_traits(request: HttpRequest) -> Tuple` - Gets tuple denoting request uniqueness. Requests with same results are treated as the same when caching.
+- `override_config(config: Config)` - Overrides default parameters in config.
 
 ## Extensions example
 **ext.py**
 ```python
-import re
-from typing import List, Callable, Tuple
+from typing import Tuple
 
 from nuclear.sublog import log
 
-from middler.request import HttpRequest
+from xman.cache import sorted_dict_trait
+from xman.config import Config
+from xman.request import HttpRequest
+from xman.response import HttpResponse
+from xman.transform import replace_request_path
 
 
-def _transformer_shorten_path(request: HttpRequest) -> HttpRequest:
-    if request.path.startswith('/path/'):
-        match = re.search(r'^/path/(.+?)(/[a-z]+)(/.*)', request.path)
-        if match:
-            request.path = match.group(3)
-            log.debug('request path transformed', path=request.path)
-    return request
+def transform_request(request: HttpRequest) -> HttpRequest:
+    """Transforms each incoming Request before further processing (caching, forwarding)."""
+    return replace_request_path(request, r'^/path/(.+?)(/[a-z]+)(/.*)', r'\3')
 
 
-transformers: List[Callable[[HttpRequest], HttpRequest]] = [
-    _transformer_shorten_path,
-]
+def transform_response(request: HttpRequest, response: HttpResponse) -> HttpResponse:
+    """Transforms each Response before sending it."""
+    if request.path.startswith('/api'):
+        log.debug('Found Ya', path=request.path)
+        response = response.set_content('{"payload": "anythingyouwish"}"')
+    return response
 
 
-def _default_request_traits(request: HttpRequest) -> Tuple:
-    return request.method, request.path, request.content, sorted(request.headers.items(), key=lambda t: t[0])
+def can_be_cached(request: HttpRequest) -> bool:
+    """Indicates whether particular request could be saved / restored from cache."""
+    return request.method in {'get', 'post'}
 
 
-request_traits_extractor: Callable[[HttpRequest], Tuple] = _default_request_traits
+def cache_request_traits(request: HttpRequest) -> Tuple:
+    """Gets tuple denoting request uniqueness. Requests with same results are treated as the same when caching."""
+    return request.method, request.path, request.content, sorted_dict_trait(request.headers)
+
+
+def override_config(config: Config):
+    """Overrides default parameters in config."""
+    config.verbose = True
+
+```
+
+# Run in docker
+```
+docker-compose build
+docker run --rm -it --name=xman --network=host -v `pwd`/extension/ext.py:/ext.py xman:latest --ext=/ext.py
 ```

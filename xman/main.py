@@ -6,9 +6,9 @@ from .version import __version__
 
 
 def main():
-    CliBuilder('middler', run=setup_proxy, help_on_empty=True, version=__version__,
+    CliBuilder('xman', run=setup_proxy, help_on_empty=True, version=__version__,
                help='HTTP proxy recording & replaying requests').has(
-        argument('dst_url', help='destination base url', required=False, default='http://127.0.0.1:7090'),
+        argument('dst_url', help='destination base url', required=False, default='http://127.0.0.1:8000'),
         parameter('listen_port', help='listen port for incoming requests', type=int, default=8080),
         parameter('listen_ssl', help='enable https on listening side', type=boolean, default=True),
         parameter('record', help='enable recording requests & responses', type=boolean, default=False),

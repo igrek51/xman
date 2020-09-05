@@ -1,13 +1,12 @@
 import ssl
 from socketserver import TCPServer
-from typing import Optional, Callable
 
 from nuclear.sublog import logerr, wrap_context, log
 
-from middler.cache import RequestCache
-from middler.config import Config
-from middler.handler import RequestHandler
-from middler.extension import load_extensions
+from .cache import RequestCache
+from .config import Config
+from .extension import load_extensions
+from .handler import RequestHandler
 
 
 def setup_proxy(listen_port: int, listen_ssl: bool, dst_url: str, record: bool, record_file: str, replay: bool,
