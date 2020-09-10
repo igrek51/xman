@@ -34,7 +34,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
     def incoming_request(self) -> HttpRequest:
         with wrap_context('building incoming request'):
             headers_dict = {key: self.headers[key] for key in self.headers.keys()}
-            method = self.command.lower()
+            method = self.command.upper()
             content_len = int(get_header(headers_dict, 'Content-Length', '0'))
             content: bytes = self.rfile.read(content_len) if content_len else b''
             return HttpRequest(requestline=self.requestline, method=method, path=self.path,

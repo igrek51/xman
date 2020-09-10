@@ -27,7 +27,7 @@ class HttpRequest(object):
             ctx['headers'] = self.headers
             if self.content:
                 ctx['content'] = '\n'+self.content.decode('utf-8')
-        log.info(f'< Incoming: {self.method.upper()} {self.path}', **ctx)
+        log.info(f'< Incoming {self.method} {self.path}', **ctx)
 
     def transform(self, transformer: Optional[Callable[['HttpRequest'], 'HttpRequest']]) -> 'HttpRequest':
         if transformer is None:
