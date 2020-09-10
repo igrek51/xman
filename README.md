@@ -79,7 +79,7 @@ In extension file you can specify request / response mappers or custom comparato
 Implement your function in place of one of the following functions:
 - `transform_request(request: HttpRequest) -> HttpRequest` - Transforms each incoming Request before further processing (caching, forwarding).
 - `transform_response(request: HttpRequest, response: HttpResponse) -> HttpResponse` - Transforms each Response before sending it.
-- `can_be_cached(request: HttpRequest) -> bool` - Indicates whether particular request could be saved / restored from cache.
+- `can_be_cached(request: HttpRequest, response: HttpResponse) -> bool` - Indicates whether particular request could be saved / restored from cache.
 - `cache_request_traits(request: HttpRequest) -> Tuple` - Gets tuple denoting request uniqueness. Requests with same results are treated as the same when caching.
 - `override_config(config: Config)` - Overrides default parameters in config.
 
@@ -110,9 +110,9 @@ def transform_response(request: HttpRequest, response: HttpResponse) -> HttpResp
     return response
 
 
-def can_be_cached(request: HttpRequest) -> bool:
-    """Indicates whether particular request could be saved / restored from cache."""
-    return request.method in {'get', 'post'}
+def can_be_cached(request: HttpRequest, response: HttpResponse) -> bool:
+    """Indicates whether particular request could be saved in cache."""
+    return response.status_code == 200
 
 
 def cache_request_traits(request: HttpRequest) -> Tuple:
@@ -122,7 +122,7 @@ def cache_request_traits(request: HttpRequest) -> Tuple:
 
 def override_config(config: Config):
     """Overrides default parameters in config."""
-    config.verbose = True
+    config.verbose = 0
 
 ```
 

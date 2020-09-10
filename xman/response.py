@@ -14,12 +14,13 @@ class HttpResponse(object):
     headers: Dict[str, str]
     content: bytes
 
-    def log(self, prefix: str, verbose: bool) -> 'HttpResponse':
-        status = f'{self.status_code} {responses[self.status_code]}'
+    def log(self, prefix: str, verbose: int) -> 'HttpResponse':
         if verbose:
-            log.debug(f'{prefix}', status=status, headers=self.headers, content='\n' + self.content.decode())
-        else:
-            log.debug(f'{prefix}', status=status)
+            status = f'{self.status_code} {responses[self.status_code]}'
+            if verbose >= 2:
+                log.debug(f'{prefix}', status=status, headers=self.headers, content='\n' + self.content.decode())
+            else:
+                log.debug(f'{prefix}', status=status)
         return self
 
     @staticmethod

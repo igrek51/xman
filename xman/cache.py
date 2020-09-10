@@ -44,18 +44,19 @@ class RequestCache(object):
                 parsed_entry = CacheEntry.from_json(entry)
                 request_hash = self._request_hash(parsed_entry.request)
                 loaded_cache[request_hash] = parsed_entry
-            log.debug(f'CACHE: loaded request-response pairs', record_file=self.config.record_file,
-                      read_entries=len(entries), distinct_entries=len(loaded_cache))
+            conflicts = len(entries) - len(loaded_cache)
+            log.info(f'CACHE: loaded request-response pairs', record_file=self.config.record_file,
+                     loaded=len(loaded_cache), conflicts=conflicts)
             return loaded_cache
         return {}
 
     def has_cached_response(self, request: HttpRequest) -> bool:
-        return self.config.replay and self._can_be_cached(request) and self._request_hash(request) in self.cache
+        return self.config.replay and self._request_hash(request) in self.cache
 
-    def _can_be_cached(self, request: HttpRequest) -> bool:
+    def _can_be_cached(self, request: HttpRequest, response: HttpResponse) -> bool:
         if self.extensions.can_be_cached is None:
             return True
-        return self.extensions.can_be_cached(request)
+        return self.extensions.can_be_cached(request, response)
 
     def get(self, request_hash: int) -> CacheEntry:
         return self.cache[request_hash]
@@ -63,9 +64,11 @@ class RequestCache(object):
     def replay_response(self, request: HttpRequest) -> HttpResponse:
         request_hash = self._request_hash(request)
         if self.config.replay_throttle:
-            log.debug('CACHE: Throttled response', hash=request_hash)
+            if self.config.verbose:
+                log.debug('CACHE: Throttled response', hash=request_hash)
             return too_many_requests_response
-        log.debug('CACHE: Found cached response', hash=request_hash)
+        if self.config.verbose:
+            log.debug('CACHE: Found cached response', hash=request_hash)
         return self.cache[request_hash].response
 
     def clear_old(self):
@@ -79,10 +82,11 @@ class RequestCache(object):
         for request_hash in to_remove:
             del self.cache[request_hash]
         if to_remove:
-            log.debug('CACHE: cleared old cache entries', removed=len(to_remove))
+            if self.config.verbose:
+                log.debug('CACHE: cleared old cache entries', removed=len(to_remove))
 
-    def saving_enabled(self, request: HttpRequest) -> bool:
-        return (self.config.record or self.config.replay) and self._can_be_cached(request)
+    def saving_enabled(self, request: HttpRequest, response: HttpResponse) -> bool:
+        return (self.config.record or self.config.replay) and self._can_be_cached(request, response)
 
     def save_response(self, request: HttpRequest, response: HttpResponse):
         request_hash = self._request_hash(request)

@@ -12,6 +12,8 @@ class Config(object):
     replay_throttle: bool
     replay_clear_cache: bool
     replay_clear_cache_seconds: int
-    allow_chunking: bool
-    verbose: bool
-    proxy_timeout: int = 10
+    # Verbosity level: 0 (disabled), 1 or 2 (highest)
+    verbose: int
+    allow_chunking: bool = True
+    timeout: int = 10
+    listen_addr: str = ''

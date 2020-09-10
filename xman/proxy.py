@@ -8,10 +8,11 @@ from .response import HttpResponse
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-def proxy_request(request: HttpRequest, base_url: str, timeout: int) -> HttpResponse:
-    with wrap_context('proxying to destination', base_url=base_url):
+def proxy_request(request: HttpRequest, base_url: str, timeout: int, verbose: int) -> HttpResponse:
+    with wrap_context('proxying to destination', dst_url=base_url, path=request.path):
         url = f'{base_url}{request.path}'
-        log.debug(f'>> proxying to', url=url)
+        if verbose:
+            log.debug(f'>> proxying to', url=url)
         response = requests.request(request.method, url, verify=False, allow_redirects=False, stream=False,
                                     timeout=timeout, headers=request.headers, data=request.content)
         content: bytes = response.content

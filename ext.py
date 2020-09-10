@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 
 from nuclear.sublog import log
 
@@ -22,9 +22,16 @@ def transform_response(request: HttpRequest, response: HttpResponse) -> HttpResp
     return response
 
 
-def can_be_cached(request: HttpRequest) -> bool:
-    """Indicates whether particular request could be saved / restored from cache."""
-    return request.method in {'get', 'post'}
+def immediate_responder(request: HttpRequest) -> Optional[HttpResponse]:
+    """Returns immediate response for matched request instead of proxying it further or searching in cache"""
+    if request.path.startswith('/api'):
+        return HttpResponse(status_code=200, headers={'Content-Type': 'application/json'}, content=''.encode())
+    return None
+
+
+def can_be_cached(request: HttpRequest, response: HttpResponse) -> bool:
+    """Indicates whether particular request with response could be saved in cache."""
+    return response.status_code == 200
 
 
 def cache_request_traits(request: HttpRequest) -> Tuple:
@@ -45,4 +52,4 @@ def override_config(config: Config):
     # config.replay_clear_cache_seconds = 60
     # config.allow_chunking = True
     # config.proxy_timeout = 10
-    config.verbose = True
+    config.verbose = 0
