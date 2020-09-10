@@ -14,3 +14,4 @@ class Config(object):
     replay_clear_cache_seconds: int
     allow_chunking: bool
     verbose: bool
+    proxy_timeout: int = 10

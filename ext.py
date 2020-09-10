@@ -34,4 +34,15 @@ def cache_request_traits(request: HttpRequest) -> Tuple:
 
 def override_config(config: Config):
     """Overrides default parameters in config."""
+    # config.listen_port = 8080
+    # config.listen_ssl = True
+    # config.dst_url = 'http://127.0.0.1:8000'
+    # config.record = False
+    # config.record_file = 'tape.json'
+    # config.replay = False
+    # config.replay_throttle = False
+    # config.replay_clear_cache = False
+    # config.replay_clear_cache_seconds = 60
+    # config.allow_chunking = True
+    # config.proxy_timeout = 10
     config.verbose = True

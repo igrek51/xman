@@ -17,7 +17,7 @@ def main():
         parameter('replay_throttle', type=boolean, default=False,
                   help='throttle response if too many requests are made'),
         parameter('replay_clear_cache', help='enable clearing cache periodically', type=boolean, default=False),
-        parameter('replay_clear_cache_seconds', help='clearing cache interval in seconds', type=int, default=1 * 60),
+        parameter('replay_clear_cache_seconds', help='clearing cache interval in seconds', type=int, default=60),
         parameter('allow_chunking', help='enable sending response in chunks', type=boolean, default=True),
         parameter('ext', help='load extensions from Python file'),
         flag('verbose', 'v', help='show more details in output'),

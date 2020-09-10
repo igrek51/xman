@@ -5,6 +5,7 @@ from typing import Dict, Iterable, Sequence
 
 from nuclear.sublog import log, log_error, wrap_context
 
+from xman.header import has_header, get_header
 from .cache import RequestCache, now_seconds
 from .config import Config
 from .extension import Extensions
@@ -32,9 +33,9 @@ class RequestHandler(SimpleHTTPRequestHandler):
 
     def incoming_request(self) -> HttpRequest:
         with wrap_context('building incoming request'):
-            headers_dict = {parsed_line[0]: parsed_line[1] for parsed_line in self.headers.items()}
+            headers_dict = {key: self.headers[key] for key in self.headers.keys()}
             method = self.command.lower()
-            content_len = int(headers_dict.get('Content-Length', 0))
+            content_len = int(get_header(headers_dict, 'Content-Length', '0'))
             content: bytes = self.rfile.read(content_len) if content_len else b''
             return HttpRequest(requestline=self.requestline, method=method, path=self.path,
                                headers=headers_dict, content=content,
@@ -51,7 +52,8 @@ class RequestHandler(SimpleHTTPRequestHandler):
             if self.cache.has_cached_response(request):
                 return self.cache.replay_response(request).log('> returning', self.config.verbose)
 
-            response: HttpResponse = proxy_request(request, base_url=f'{self.config.dst_url}')
+            response: HttpResponse = proxy_request(request, base_url=f'{self.config.dst_url}',
+                                                   timeout=self.config.proxy_timeout)
             response.log('<< received', self.config.verbose)
 
             if self.cache.saving_enabled(request):
@@ -63,11 +65,12 @@ class RequestHandler(SimpleHTTPRequestHandler):
         with wrap_context('responding back to client'):
             self.send_response_only(response.status_code)
 
-            if 'Content-Encoding' in response.headers:
+            if has_header(response.headers, 'Content-Encoding'):
                 del response.headers['Content-Encoding']
                 log.debug('removing Content-Encoding header')
 
-            if 'Content-Length' not in response.headers and response.content:
+            if not has_header(response.headers, 'Content-Length') and \
+                    not has_header(response.headers, 'Transfer-Encoding') and response.content:
                 response.headers['Content-Length'] = str(len(response.content))
                 log.debug('adding missing Content-Length header')
 
