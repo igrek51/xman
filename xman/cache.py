@@ -45,7 +45,7 @@ class RequestCache(object):
                 request_hash = self._request_hash(parsed_entry.request)
                 loaded_cache[request_hash] = parsed_entry
             conflicts = len(entries) - len(loaded_cache)
-            log.info(f'Cache: loaded request-response pairs', record_file=self.config.record_file,
+            log.info(f'Loaded cached request-response entries', record_file=self.config.record_file,
                      loaded=len(loaded_cache), conflicts=conflicts)
             return loaded_cache
         return {}
@@ -132,6 +132,8 @@ def now_seconds() -> float:
 
 class EnhancedJSONEncoder(json.JSONEncoder):
     def default(self, obj):
+        if isinstance(obj, HttpRequest):
+            return obj.to_json()
         if is_dataclass(obj):
             return asdict(obj)
         if isinstance(obj, bytes):

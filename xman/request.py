@@ -2,7 +2,8 @@ import json
 from typing import Dict, Callable, Any, Optional
 from urllib import parse
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, asdict
+from dataclasses import field
 from nuclear.sublog import log
 
 
@@ -16,15 +17,23 @@ class HttpRequest(object):
     client_addr: str
     client_port: int
     timestamp: float
-    """set to redirect particular request somewhere else"""
-    forward_to_url: Optional[str] = None
-    """custom labels marked while processing request"""
+    """Set to redirect particular request somewhere else"""
+    forward_url: Optional[str] = None
+    """Custom labels marked while processing request"""
     metadata: Dict[str, str] = field(default_factory=lambda: dict())
 
     @staticmethod
     def from_json(data: dict) -> 'HttpRequest':
         data['content'] = data.get('content').encode('utf-8')
         return HttpRequest(**data)
+
+    def to_json(self) -> dict:
+        d = asdict(self)
+        if not self.forward_url:
+            del d['forward_url']
+        if not self.metadata:
+            del d['metadata']
+        return d
 
     def log(self, verbose: int):
         ctx = {}
@@ -46,7 +55,7 @@ class HttpRequest(object):
             client_addr=self.client_addr,
             client_port=self.client_port,
             timestamp=self.timestamp,
-            forward_to_url=self.forward_to_url,
+            forward_url=self.forward_url,
             metadata=self.metadata,
         )
         return transformer(cloned)

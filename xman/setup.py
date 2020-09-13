@@ -30,6 +30,7 @@ def setup_proxy(listen_port: int, listen_ssl: bool, dst_url: str, record: bool, 
             )
             if extensions.override_config:
                 extensions.override_config(_config)
+            log.info('Configuration set', **asdict(_config))
 
             RequestHandler.extensions = extensions
             RequestHandler.config = _config
@@ -39,7 +40,6 @@ def setup_proxy(listen_port: int, listen_ssl: bool, dst_url: str, record: bool, 
             httpd = TCPServer((_config.listen_addr, _config.listen_port), RequestHandler)
             if _config.listen_ssl:
                 httpd.socket = ssl.wrap_socket(httpd.socket, certfile='./dev-cert.pem', server_side=True)
-            log.info('Configuration set', **asdict(_config))
             log.info(f'Listening on {_config.listen_scheme} port {_config.listen_port}...')
             try:
                 httpd.serve_forever()
