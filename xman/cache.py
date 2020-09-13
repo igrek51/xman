@@ -51,7 +51,12 @@ class RequestCache(object):
         return {}
 
     def has_cached_response(self, request: HttpRequest) -> bool:
-        return self.config.replay and self._request_hash(request) in self.cache
+        if not self.config.replay:
+            return False
+        rhash = self._request_hash(request)
+        if rhash not in self.cache:
+            return False
+        return self._can_be_cached(request, self.cache[rhash].response)
 
     def _can_be_cached(self, request: HttpRequest, response: HttpResponse) -> bool:
         if self.extensions.can_be_cached is None:
