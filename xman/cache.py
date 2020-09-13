@@ -101,7 +101,11 @@ class RequestCache(object):
                 serializable = list(self.cache.values())
                 txt = json.dumps(serializable, sort_keys=True, indent=4, cls=EnhancedJSONEncoder)
                 Path(self.config.record_file).write_text(txt)
-            log.debug(f'+ CACHE: new request-response recorded', hash=request_hash, total_entries=len(self.cache))
+            ctx = {}
+            if self.config.verbose:
+                ctx['traits'] = str(self._request_traits(request))
+            log.debug(f'+ CACHE: new request-response recorded',
+                      hash=request_hash, total_entries=len(self.cache), **ctx)
 
     def _request_hash(self, request: HttpRequest) -> int:
         traits_str = str(self._request_traits(request))

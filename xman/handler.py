@@ -1,9 +1,8 @@
 import json
-import sys
 from http.server import SimpleHTTPRequestHandler
 from typing import Dict, Iterable, Sequence, Optional
 
-from nuclear.sublog import log, log_error, wrap_context
+from nuclear.sublog import log, wrap_context, logerr
 
 from xman.header import has_header, get_header
 from .cache import RequestCache, now_seconds
@@ -20,7 +19,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
     cache: RequestCache
 
     def handle_request(self):
-        with log_error():
+        with logerr():
             with wrap_context('handling request'):
                 self.connection.settimeout(self.config.timeout)
                 incoming_request = self.incoming_request()
