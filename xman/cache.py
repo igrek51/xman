@@ -45,7 +45,7 @@ class RequestCache(object):
                 request_hash = self._request_hash(parsed_entry.request)
                 loaded_cache[request_hash] = parsed_entry
             conflicts = len(entries) - len(loaded_cache)
-            log.info(f'CACHE: loaded request-response pairs', record_file=self.config.record_file,
+            log.info(f'Cache: loaded request-response pairs', record_file=self.config.record_file,
                      loaded=len(loaded_cache), conflicts=conflicts)
             return loaded_cache
         return {}
@@ -70,10 +70,8 @@ class RequestCache(object):
         request_hash = self._request_hash(request)
         if self.config.replay_throttle:
             if self.config.verbose:
-                log.debug('CACHE: Throttled response', hash=request_hash)
+                log.debug('Cache: Throttled response')
             return too_many_requests_response
-        if self.config.verbose:
-            log.debug('CACHE: Found cached response', hash=request_hash)
         return self.cache[request_hash].response
 
     def clear_old(self):
@@ -88,7 +86,7 @@ class RequestCache(object):
             del self.cache[request_hash]
         if to_remove:
             if self.config.verbose:
-                log.debug('CACHE: cleared old cache entries', removed=len(to_remove))
+                log.debug('Cache: cleared old cache entries', removed=len(to_remove))
 
     def saving_enabled(self, request: HttpRequest, response: HttpResponse) -> bool:
         return (self.config.record or self.config.replay) and self._can_be_cached(request, response)
@@ -104,7 +102,7 @@ class RequestCache(object):
             ctx = {}
             if self.config.verbose:
                 ctx['traits'] = str(self._request_traits(request))
-            log.debug(f'+ CACHE: new request-response recorded',
+            log.debug(f'+ Cache: new request-response recorded',
                       hash=request_hash, total_entries=len(self.cache), **ctx)
 
     def _request_hash(self, request: HttpRequest) -> int:

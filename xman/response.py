@@ -5,6 +5,7 @@ from typing import Dict, Callable, Any, Optional
 from dataclasses import dataclass
 from nuclear.sublog import log
 
+from xman.header import has_header
 from .request import HttpRequest
 
 
@@ -46,7 +47,8 @@ class HttpResponse(object):
 
     def set_json(self, obj: Any) -> 'HttpResponse':
         self.content = json.dumps(obj).encode()
-        self.headers['Content-Length'] = str(len(self.content))
+        if not has_header(self.headers, 'Transfer-Encoding'):
+            self.headers['Content-Length'] = str(len(self.content))
         self.headers['Content-Type'] = 'application/json'
         return self
 

@@ -48,18 +48,18 @@ docker run --rm -it --network=host igrek5151/xman:latest \
 For more customization create your own `ext.py` extension file (example in section below) and run:
 ```bash
 docker run --rm -it --network=host -v `pwd`/ext.py:/ext.py igrek5151/xman:latest \
-  --ext=/ext.py
+  --config=/ext.py
 ```
 If you want to keep recorded requests & responses outside container, mount `tape.json` as well:
 ```bash
 touch tape.json
 docker run --rm -it --network=host -v `pwd`/ext.py:/ext.py -v `pwd`/tape.json:/src/tape.json igrek5151/xman:latest \
-  --ext=/ext.py --record=true --replay=true
+  --config=/ext.py --record=true --replay=true
 ```
 
 # Extensions
 If you need more customization, you can specify extension file, where you can implement your custom behaviour or even processing logic.
-In order to do that you must create Python script and pass its filename by parameter: `xman --ext ext.py`.
+In order to do that you must create Python script and pass its filename by parameter: `xman --config ext.py`.
 
 In extension file you can specify request / response mappers or custom comparator deciding which requests should be treated as the same. Using that you can achieve custom behaviour for some particular type of requests.
 
@@ -167,7 +167,7 @@ Options:
                                                             Default: 60
   --allow-chunking ALLOW_CHUNKING                         - enable sending response in chunks
                                                             Default: True
-  --ext EXT                                               - load extensions from Python file
+  --config CONFIG                                         - load extensions from Python file
   -v, --verbose                                           - show more details in output
 
 ```

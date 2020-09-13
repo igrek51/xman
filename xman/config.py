@@ -17,3 +17,7 @@ class Config(object):
     allow_chunking: bool = True
     timeout: int = 10
     listen_addr: str = ''
+
+    @property
+    def listen_scheme(self) -> str:
+        return 'HTTPS' if self.listen_ssl else 'HTTP'

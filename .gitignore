@@ -12,4 +12,4 @@ dist/
 *.iml
 venv/
 *_dev.*
-tape.json
+*tape.json

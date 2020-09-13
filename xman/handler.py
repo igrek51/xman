@@ -26,7 +26,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
                 incoming_request.log(self.config.verbose)
                 response_0 = self.generate_response(incoming_request)
                 response = response_0.transform(self.extensions.transform_response, incoming_request)
-                if response != response_0 and self.config.verbose:
+                if response != response_0 and self.config.verbose >= 2:
                     response.log('response transformed', self.config.verbose)
                 self.respond_to_client(response)
 
@@ -44,7 +44,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
     def generate_response(self, request_0: HttpRequest) -> HttpResponse:
         with wrap_context('generating response'):
             request = request_0.transform(self.extensions.transform_request)
-            if request != request_0 and self.config.verbose:
+            if request != request_0 and self.config.verbose >= 2:
                 log.debug('request transformed')
 
             quick_reponse = self.find_immediate_response(request)
@@ -53,10 +53,13 @@ class RequestHandler(SimpleHTTPRequestHandler):
 
             self.cache.clear_old()
             if self.cache.has_cached_response(request):
-                return self.cache.replay_response(request).log('> returning', self.config.verbose)
+                return self.cache.replay_response(request).log('> Cache: returning cached response', self.config.verbose)
 
-            response: HttpResponse = proxy_request(request, base_url=self.config.dst_url,
-                                                   timeout=self.config.timeout, verbose=self.config.verbose)
+            if self.config.replay and self.config.verbose:
+                log.warn('request not found in cache', path=request.path)
+            base_url = request.forward_to_url if request.forward_to_url else self.config.dst_url
+            response: HttpResponse = proxy_request(request, base_url=base_url, timeout=self.config.timeout,
+                                                   verbose=self.config.verbose)
             response.log('<< received', self.config.verbose)
 
             if self.cache.saving_enabled(request, response):
@@ -75,13 +78,17 @@ class RequestHandler(SimpleHTTPRequestHandler):
 
             if has_header(response.headers, 'Content-Encoding'):
                 del response.headers['Content-Encoding']
-                if self.config.verbose:
+                if self.config.verbose >= 2:
                     log.debug('removing Content-Encoding header')
 
             if not has_header(response.headers, 'Content-Length') and \
                     not has_header(response.headers, 'Transfer-Encoding') and response.content:
                 response.headers['Content-Length'] = str(len(response.content))
                 log.warn('adding missing Content-Length header')
+
+            if has_header(response.headers, 'Content-Length') and has_header(response.headers, 'Transfer-Encoding'):
+                del response.headers['Content-Length']
+                log.warn('removed Content-Length header conflicting with Transfer-Encoding')
 
             for name, value in response.headers.items():
                 self.send_header(name, value)

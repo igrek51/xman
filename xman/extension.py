@@ -23,15 +23,17 @@ def load_extensions(extension_path: str) -> Extensions:
     if not extension_path:
         return Extensions()
 
-    log.info(f'loading extensions', path=extension_path)
     ext = Extensions()
-    ext_module = SourceFileLoader("xman.extension", extension_path).load_module()
+    ext_module = SourceFileLoader('xman.extension', extension_path).load_module()
     ext_names = [field.name for field in fields(Extensions)]
+    loaded = []
     for ext_name in ext_names:
         if hasattr(ext_module, ext_name):
             ext_value = getattr(ext_module, ext_name)
             if ext_value:
                 setattr(ext, ext_name, ext_value)
-                log.debug(f'loaded extension: {ext_name}')
+                loaded.append(ext_name)
+
+    log.info('Loaded extensions', file=extension_path, extensions=loaded)
 
     return ext
