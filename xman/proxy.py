@@ -18,10 +18,12 @@ def proxy_request(request: HttpRequest, default_url: str, timeout: int, verbose:
             response = requests.request(request.method, url, verify=False, allow_redirects=False, stream=False,
                                         timeout=timeout, headers=request.headers, data=request.content)
             content: bytes = response.content
-            return HttpResponse(status_code=response.status_code, headers=dict(response.headers), content=content)
+            http_response = HttpResponse(status_code=response.status_code, headers=dict(response.headers),
+                                         content=content)
+            return http_response.log('<< received', verbose)
 
     # Bad Gateway response
     error_msg = f'Proxying failed: {dst_url}'
     return HttpResponse(status_code=502, headers={
         'X-Man-Error': 'proxying failed',
-    }, content=error_msg.encode())
+    }).set_content(error_msg)

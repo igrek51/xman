@@ -13,7 +13,7 @@ from .request import HttpRequest
 class HttpResponse(object):
     status_code: int
     headers: Dict[str, str]
-    content: bytes
+    content: bytes = b''
 
     def log(self, prefix: str, verbose: int) -> 'HttpResponse':
         if verbose:
