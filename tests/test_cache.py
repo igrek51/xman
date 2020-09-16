@@ -62,10 +62,21 @@ def test_clear_cache():
         replay_clear_cache_seconds=10,
         verbose=2,
     ))
-
     assert len(cache.cache) == 2
     cache.clear_old()
     assert len(cache.cache) == 0
+
+
+def test_clear_cache_but_disabled():
+    cache = RequestCache(Extensions(), Config(
+        record_file='tests/res/tape_read.json',
+        replay_clear_cache=False,
+        replay_clear_cache_seconds=10,
+        verbose=2,
+    ))
+    assert len(cache.cache) == 2
+    cache.clear_old()
+    assert len(cache.cache) == 2
 
 
 def test_read_from_empty():
@@ -97,6 +108,7 @@ def test_save_new():
     cache = RequestCache(Extensions(), Config(
         record_file='tests/res/tape_save.json',
         record=True,
+        verbose=1,
     ))
     assert len(cache.cache) == 0
     assert cache.saving_enabled(request1, response1)

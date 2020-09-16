@@ -1,3 +1,4 @@
+import re
 from typing import Tuple, Optional
 
 from nuclear.sublog import log
@@ -6,12 +7,15 @@ from xman.cache import sorted_dict_trait
 from xman.config import Config
 from xman.request import HttpRequest
 from xman.response import HttpResponse
-from xman.transform import replace_request_path
 
 
 def transform_request(request: HttpRequest) -> HttpRequest:
     """Transforms each incoming Request before further processing (caching, forwarding)."""
-    return replace_request_path(request, r'^/some/path/(.+?)(/[a-z]+)(/.*)', r'\3')
+    match = re.match(r'^/some/path/(.+?)(/[a-z]+)(/.*)', request.path)
+    if match:
+        request.path = match.expand(r'\3')
+        log.debug('request path transformed', path=request.path)
+    return request
 
 
 def immediate_responder(request: HttpRequest) -> Optional[HttpResponse]:
