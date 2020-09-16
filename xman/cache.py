@@ -63,9 +63,6 @@ class RequestCache(object):
             return True
         return self.extensions.can_be_cached(request, response)
 
-    def get(self, request_hash: int) -> CacheEntry:
-        return self.cache[request_hash]
-
     def replay_response(self, request: HttpRequest) -> HttpResponse:
         request_hash = self._request_hash(request)
         if self.config.replay_throttle:
@@ -132,8 +129,10 @@ def now_seconds() -> float:
 
 class EnhancedJSONEncoder(json.JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, HttpRequest):
-            return obj.to_json()
+        if isinstance(obj, CacheEntry):
+            d = asdict(obj)
+            d['request'] = obj.request.marshal()
+            return d
         if is_dataclass(obj):
             return asdict(obj)
         if isinstance(obj, bytes):

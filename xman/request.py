@@ -27,7 +27,7 @@ class HttpRequest(object):
         data['content'] = data.get('content').encode('utf-8')
         return HttpRequest(**data)
 
-    def to_json(self) -> dict:
+    def marshal(self) -> dict:
         d = asdict(self)
         if not self.dst_url:
             del d['dst_url']

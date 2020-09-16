@@ -11,7 +11,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 def proxy_request(request: HttpRequest, default_url: str, timeout: int, verbose: int) -> HttpResponse:
     dst_url = request.dst_url if request.dst_url else default_url
     with logerr():
-        with wrap_context('proxying to destination', dst_url=dst_url, path=request.path, content=request.content):
+        with wrap_context('proxying to URL', dst_url=dst_url, path=request.path, content=request.content):
             url = f'{dst_url}{request.path}'
             if verbose:
                 log.debug(f'>> proxying to', url=url)

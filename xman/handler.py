@@ -1,9 +1,9 @@
-import json
 from http.server import SimpleHTTPRequestHandler
-from typing import Dict, Iterable, Sequence, Optional
+from typing import Optional
 
 from nuclear.sublog import log, wrap_context, logerr
 
+from xman.chunk import send_chunked_response
 from xman.header import has_header, get_header
 from .cache import RequestCache, now_seconds
 from .config import Config
@@ -19,16 +19,15 @@ class RequestHandler(SimpleHTTPRequestHandler):
     cache: RequestCache
 
     def handle_request(self):
-        with logerr():
-            with wrap_context('handling request'):
-                self.connection.settimeout(self.config.timeout)
-                incoming_request = self.incoming_request()
-                incoming_request.log(self.config.verbose)
-                response_0 = self.generate_response(incoming_request)
-                response = response_0.transform(self.extensions.transform_response, incoming_request)
-                if response != response_0 and self.config.verbose >= 2:
-                    response.log('response transformed', self.config.verbose)
-                self.respond_to_client(response)
+        with logerr('handling request'):
+            self.connection.settimeout(self.config.timeout)
+            incoming_request = self.incoming_request()
+            incoming_request.log(self.config.verbose)
+            response_0 = self.generate_response(incoming_request)
+            response = response_0.transform(self.extensions.transform_response, incoming_request)
+            if response != response_0 and self.config.verbose >= 2:
+                response.log('response transformed', self.config.verbose)
+            self.respond_to_client(response)
 
     def incoming_request(self) -> HttpRequest:
         with wrap_context('building incoming request'):
@@ -47,13 +46,14 @@ class RequestHandler(SimpleHTTPRequestHandler):
             if request != request_0 and self.config.verbose >= 2:
                 log.debug('request transformed')
 
-            quick_reponse = self.find_immediate_response(request)
-            if quick_reponse:
-                return quick_reponse.log('> immediate response', self.config.verbose)
+            immediate_reponse = self.find_immediate_response(request)
+            if immediate_reponse:
+                return immediate_reponse.log('> immediate response', self.config.verbose)
 
             self.cache.clear_old()
             if self.cache.has_cached_response(request):
-                return self.cache.replay_response(request).log('> Cache: returning cached response', self.config.verbose)
+                return self.cache.replay_response(request).log('> Cache: returning cached response',
+                                                               self.config.verbose)
 
             if self.config.replay and self.config.verbose:
                 log.warn('request not found in cache', path=request.path)
@@ -72,7 +72,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
         return self.extensions.immediate_responder(request)
 
     def respond_to_client(self, response: HttpResponse):
-        with wrap_context('responding back to client'):
+        with wrap_context('responding to client'):
             self.send_response_only(response.status_code)
 
             if has_header(response.headers, 'Content-Encoding'):
@@ -94,24 +94,12 @@ class RequestHandler(SimpleHTTPRequestHandler):
             self.end_headers()
 
             if self.config.allow_chunking and response.headers.get('Transfer-Encoding') == 'chunked':
-                self.send_chunked_response(chunks(response.content, 512))
+                send_chunked_response(self.wfile, response.content)
             else:
                 self.wfile.write(response.content)
             self.close_connection = True
             if self.config.verbose >= 2:
                 log.debug('> response sent', client_addr=self.client_address[0], client_port=self.client_address[1])
-
-    def send_chunked_response(self, content_chunks: Iterable[bytes]):
-        for chunk in content_chunks:
-            tosend = ('%X' % len(chunk)).encode('utf-8') + b'\r\n' + chunk + b'\r\n'
-            self.wfile.write(tosend)
-        self.wfile.write('0\r\n\r\n'.encode('utf-8'))
-
-    def respond_json(self, response: Dict):
-        self.send_response(200)
-        self.send_header('Content-Type', 'application/json')
-        self.end_headers()
-        self.wfile.write(json.dumps(response).encode())
 
     def do_GET(self):
         self.handle_request()
@@ -127,8 +115,3 @@ class RequestHandler(SimpleHTTPRequestHandler):
 
     def do_HEAD(self):
         self.handle_request()
-
-
-def chunks(lst: Sequence, n: int) -> Iterable:
-    for i in range(0, len(lst), n):
-        yield lst[i:i + n]

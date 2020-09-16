@@ -3,20 +3,20 @@ from dataclasses import dataclass
 
 @dataclass
 class Config(object):
-    listen_port: int
-    listen_ssl: bool
-    dst_url: str
-    record: bool
-    record_file: str
-    replay: bool
-    replay_throttle: bool
-    replay_clear_cache: bool
-    replay_clear_cache_seconds: int
-    # Verbosity level: 0 (disabled), 1 or 2 (highest)
-    verbose: int
-    allow_chunking: bool = True
-    timeout: int = 10
     listen_addr: str = ''
+    listen_port: int = 8080
+    listen_ssl: bool = True
+    dst_url: str = 'http://127.0.0.1:8000'
+    record: bool = False
+    record_file: str = 'tape.json'
+    replay: bool = False
+    replay_throttle: bool = False
+    replay_clear_cache: bool = False
+    replay_clear_cache_seconds: int = 60
+    timeout: int = 10
+    # Verbosity level: 0 (disabled), 1 or 2 (highest)
+    verbose: int = 0
+    allow_chunking: bool = True
 
     @property
     def listen_scheme(self) -> str:

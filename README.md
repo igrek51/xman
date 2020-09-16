@@ -45,21 +45,21 @@ docker run --rm -it --network=host igrek5151/xman:latest \
   http://127.0.0.1:8000 --listen-port 8443 --listen-ssl=true --replay=true
 ```
 
-For more customization create your own `ext.py` extension file (example in section below) and run:
+For more customization create your own `extensions.py` extension file (example in section below) and run:
 ```bash
-docker run --rm -it --network=host -v `pwd`/ext.py:/ext.py igrek5151/xman:latest \
-  --config=/ext.py
+docker run --rm -it --network=host -v `pwd`/extensions.py:/extensions.py igrek5151/xman:latest \
+  --config=/extensions.py
 ```
 If you want to keep recorded requests & responses outside container, mount `tape.json` as well:
 ```bash
 touch tape.json
-docker run --rm -it --network=host -v `pwd`/ext.py:/ext.py -v `pwd`/tape.json:/src/tape.json igrek5151/xman:latest \
-  --config=/ext.py --record=true --replay=true
+docker run --rm -it --network=host -v `pwd`/extensions.py:/extensions.py -v `pwd`/tape.json:/src/tape.json igrek5151/xman:latest \
+  --config=/extensions.py --record=true --replay=true
 ```
 
 # Extensions
 If you need more customization, you can specify extension file, where you can implement your custom behaviour or even processing logic.
-In order to do that you must create Python script and pass its filename by parameter: `xman --config ext.py`.
+In order to do that you must create Python script and pass its filename by parameter: `xman --config extensions.py`.
 
 In extension file you can specify request / response mappers or custom comparator deciding which requests should be treated as the same. Using that you can achieve custom behaviour for some particular type of requests.
 
@@ -72,7 +72,7 @@ Implement your function in place of one of the following functions:
 - `override_config(config: Config)` - Overrides default parameters in config.
 
 ## Extensions example
-**ext.py**
+**extensions.py**
 ```python
 from typing import Tuple, Optional
 
