@@ -57,9 +57,8 @@ class RequestHandler(SimpleHTTPRequestHandler):
 
             if self.config.replay and self.config.verbose:
                 log.warn('request not found in cache', path=request.path)
-            base_url = request.forward_url if request.forward_url else self.config.dst_url
-            response: HttpResponse = proxy_request(request, base_url=base_url, timeout=self.config.timeout,
-                                                   verbose=self.config.verbose)
+            response: HttpResponse = proxy_request(request, default_url=self.config.dst_url,
+                                                   timeout=self.config.timeout, verbose=self.config.verbose)
             response.log('<< received', self.config.verbose)
 
             if self.cache.saving_enabled(request, response):

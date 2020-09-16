@@ -7,13 +7,12 @@ from .response import HttpResponse
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-bad_gateway_response = HttpResponse(status_code=502, headers={'X-Xman-Error': 'proxying failed'}, content=b'')
 
-
-def proxy_request(request: HttpRequest, base_url: str, timeout: int, verbose: int) -> HttpResponse:
+def proxy_request(request: HttpRequest, default_url: str, timeout: int, verbose: int) -> HttpResponse:
+    dst_url = request.dst_url if request.dst_url else default_url
     with logerr():
-        with wrap_context('proxying to destination', dst_url=base_url, path=request.path, content=request.content):
-            url = f'{base_url}{request.path}'
+        with wrap_context('proxying to destination', dst_url=dst_url, path=request.path, content=request.content):
+            url = f'{dst_url}{request.path}'
             if verbose:
                 log.debug(f'>> proxying to', url=url)
             response = requests.request(request.method, url, verify=False, allow_redirects=False, stream=False,
@@ -21,4 +20,8 @@ def proxy_request(request: HttpRequest, base_url: str, timeout: int, verbose: in
             content: bytes = response.content
             return HttpResponse(status_code=response.status_code, headers=dict(response.headers), content=content)
 
-    return bad_gateway_response
+    # Bad Gateway response
+    error_msg = f'Proxying failed: {dst_url}'
+    return HttpResponse(status_code=502, headers={
+        'X-Man-Error': 'proxying failed',
+    }, content=error_msg.encode())

@@ -17,9 +17,9 @@ class HttpRequest(object):
     client_addr: str
     client_port: int
     timestamp: float
-    """Set to redirect particular request somewhere else"""
-    forward_url: Optional[str] = None
-    """Custom labels marked while processing request"""
+    """Overrides default destination address in order to redirect particular request somewhere else"""
+    dst_url: Optional[str] = None
+    """Custom additional labels marked while processing request"""
     metadata: Dict[str, str] = field(default_factory=lambda: dict())
 
     @staticmethod
@@ -29,8 +29,8 @@ class HttpRequest(object):
 
     def to_json(self) -> dict:
         d = asdict(self)
-        if not self.forward_url:
-            del d['forward_url']
+        if not self.dst_url:
+            del d['dst_url']
         if not self.metadata:
             del d['metadata']
         return d
@@ -55,7 +55,7 @@ class HttpRequest(object):
             client_addr=self.client_addr,
             client_port=self.client_port,
             timestamp=self.timestamp,
-            forward_url=self.forward_url,
+            dst_url=self.dst_url,
             metadata=self.metadata,
         )
         return transformer(cloned)
